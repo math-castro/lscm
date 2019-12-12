@@ -17,6 +17,7 @@ public:
 	 * Initialize the data structures
 	 **/
 	Segmentation(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh) {
+		threshold = 0.05;
 		he = &mesh;
 		V = &V_original;
 		F = &F_original;
@@ -65,10 +66,62 @@ public:
 			int i = EdgeMap[e];
 			EdgeSharpness->row(i) << getEdgeSharpness(e);
 		}
+		//cout << *EdgeSharpness << endl;
+	}
+
+	void setThreshold(float newThreshold) { threshold = newThreshold; }
+	float getThreshold() { return threshold; }
+
+	vector<int> getNeighbours(int v) {
+		return vector<int>();
+	}
+
+	void expandFeatureCurve(int startEdge) {
+		int* tag = new int[2*nEdges](); // tag[i] = 0 (nothing), 1 (feature), 2 (feature neighbor)
+		vector<int> detectedFeature;
+		int maxStringLength = 5;
+		int minFeatureLength = 15;
+		int edges[] = {startEdge, he->getOpposite(startEdge)};
+		for (const int &edge : edges) {
+    		int current = edge;
+			float sharpness = 0;
+			vector<int> S;
+			do {
+				S.push_back(current);
+				sharpness += getEdgeSharpness(current);
+				//DFS(current, S, sharpness);
+				current = S[1];
+				detectedFeature.push_back(current);
+
+			} while (sharpness > maxStringLength * threshold);
+		}
+		if (detectedFeature.size() > minFeatureLength) {
+			// tag elements of detectedFeature as feature
+			for (int i=0; i<detectedFeature.size(); i++) {
+				tag[detectedFeature[i]] = 1;
+			}
+			// tag neighbours of detectedFeature as feature neighbor
+			int start = he->getTarget(he->getOpposite(detectedFeature[0]));
+			vector<int> neighbours = getNeighbours(start);
+			for (int j=0; j<neighbours.size(); j++) {
+				if (tag[neighbours[j]] == 0) {
+					tag[neighbours[j]] = 2;
+				}
+			}
+			for (int i=0; i<detectedFeature.size(); i++) {
+				int current = he->getTarget(detectedFeature[i]);
+				vector<int> neighbours = getNeighbours(start);
+				for (int j=0; j<neighbours.size(); j++) {
+					if (tag[neighbours[j]] == 0) {
+						tag[neighbours[j]] = 2;
+					}
+				}
+			}
+		}
 	}
 
 private:
-
+	float threshold;
 	/** Half-edge representation of the original input mesh */
 	HalfedgeDS *he;
 	MatrixXd *V; // vertex coordinates of the original input mesh
