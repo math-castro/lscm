@@ -16,6 +16,7 @@ option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
 find_package(LIBIGL REQUIRED QUIET)
 
 # Source Files
+include_directories(src)
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 add_executable(lscm ${SRC_FILES})
 target_link_libraries(lscm igl::core igl::opengl_glfw)
