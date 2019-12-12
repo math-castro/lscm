@@ -19,7 +19,7 @@ public:
 	Segmentation(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh, igl::opengl::glfw::Viewer &viewer_) {
 		viewer = &viewer_;
 		//threshold = 0.7; // low poly bunny;
-		threshold = 0.7;
+		threshold = 0.838; // for the high resolution bunny, allows 5% of the edges.
 		he = &mesh;
 		V = &V_original;
 		F = &F_original;
@@ -27,37 +27,75 @@ public:
 		//int n = V_original.rows();		   // number of vertices
 		EdgeSharpness = new VectorXd(nEdges);
 		getEdgeSharpnessMatrix();
+		//cout << *EdgeSharpness << endl;
 		//cout << nEdges << endl;
 		colorSharpEdges();
 	}
 
 	void colorSharpEdges() {
 		//viewer.append_mesh();
+		cout << "show_lines " << viewer->data().show_lines << endl;
+		viewer->data().show_lines = false;
+		cout << "show_lines " << viewer->data().show_lines << endl;
+
+		/*cout << "point_size " << viewer->data().point_size << endl;
+		viewer->data().point_size = 60.0f;
+		cout << "point_size " << viewer->data().point_size << endl;
+
 		cout << "linewidth " << viewer->data().line_width << endl;
-		viewer->data().line_width = 100.0f;
-		cout << "linewidth " << viewer->data().line_width << endl;
+		viewer->data().line_width = 500.0f;
+		cout << "linewidth " << viewer->data().line_width << endl;*/
 		MatrixXd e1(2*nEdges, 3);
 		MatrixXd e2(2*nEdges, 3);
 		int i = 0;
 		for (int e=0; e<2*nEdges; e++) {
-			cout << "e: " << e << endl;
 			if ((*EdgeSharpness)(EdgeMap[e]) < threshold) {
-				//cout << "pas good" << endl;
 				continue;
 			}
-			//cout << "good" << endl;
 
-			e1.row(i) << 1.01*V->row(he->getTarget(e));
-			e2.row(i) << 1.01*V->row(he->getTarget(he->getOpposite(e)));
+			e1.row(i) << V->row(he->getTarget(e));
+			e2.row(i) << V->row(he->getTarget(he->getOpposite(e)));
 			i++;
 		}
+		//cout << "linewidth " << viewer->data().line_width << endl;
 		viewer->data().add_edges(
 			e1,
 			e2,
 			Eigen::RowVector3d(1, 0, 0));
-		cout << "bitch" << endl;
-		//viewer->data().clear();
-		cout << "what" << endl;
+
+		/*MatrixX3d Vc;
+		Vc << -1, -1, -1,
+			  -1, -1,  1,
+			  -1,  1, -1,
+	  		  -1,  1,  1,
+			   1, -1, -1,
+	  		   1, -1,  1,
+	  		   1,  1, -1,
+	  	  	   1,  1,  1;
+		MatrixXi Fc;
+		Fc << 0, 1, 2,
+			  1, 3, 2,
+			  4, 0, 6,
+			  0, 2, 6,
+			  5, 4, 7,
+			  4, 6, 7,
+			  1, 5, 3,
+			  5, 7, 3,
+			  2, 3, 6,
+			  3, 7, 6,
+			  4, 5, 0,
+			  5, 1, 0;
+		viewer->data().*/
+
+		/*cout << viewer->data(0).line_width << endl;
+		viewer->data(1).line_width = 1000.0f;
+		cout << viewer->data(1).line_width << endl;
+		cout << viewer->data(10).line_width << endl;
+		cout << viewer->data(10000000).line_width << endl;
+		*/
+		//cout << "linewidth " << viewer->data().line_width << endl;
+		//viewer->data().line_width = 300.0f;
+		//cout << "linewidth " << viewer->data().line_width << endl;
 	}
 
 	Vector3d getNormal(int f) {
