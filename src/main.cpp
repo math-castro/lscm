@@ -52,12 +52,12 @@ int main(int argc, char *argv[]) {
 
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
 
-	HalfedgeBuilder *builder = new HalfedgeBuilder();
-	HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
-	Segmentation *segmentation = new Segmentation(V, F, he);
-
 	viewer.callback_key_down = &key_down;
 	viewer.data().set_mesh(V, F);
+
+	HalfedgeBuilder *builder = new HalfedgeBuilder();
+	HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
+	Segmentation *segmentation = new Segmentation(V, F, he, viewer);
 
 	viewer.core(0).align_camera_center(V, F);
 	viewer.launch(); // run the viewer
