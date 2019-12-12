@@ -36,3 +36,7 @@
 
 # Build
 build*/
+cmake-build-*/
+
+#CLion
+.idea/
