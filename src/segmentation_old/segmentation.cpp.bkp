@@ -1,0 +1,287 @@
+#include "segmentation_old/segmentation.hpp"
+
+#include <math.h>
+
+using namespace Eigen;
+using namespace std;
+
+/**
+ * Initialize the data structures
+ **/
+Segmentation::Segmentation(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh,
+             igl::opengl::glfw::Viewer &viewer_) {
+  debug = 0;
+  viewer = &viewer_;
+  // threshold = 0.7; // low poly bunny;
+  // threshold = 0.838; // for the high resolution bunny, allows 5% of the
+  // edges.
+  threshold = 0.4;
+
+  sharpEdges = vector<int>();
+  tag.assign(2 * nEdges,0);  // tag[i] = 0 (nothing), 1 (feature), 2 (feature
+                                // neighbor)
+  he = &mesh;
+  V = &V_original;
+  F = &F_original;
+  nEdges = he->sizeOfHalfedges() / 2;  // number of edges
+  // int n = V_original.rows();		   // number of vertices
+  EdgeSharpness = new VectorXd(nEdges);
+  getEdgeSharpnessMatrix();
+  // cout << *EdgeSharpness << endl;
+  // cout << nEdges << endl;
+  colorSharpEdges();
+  // expandFeatureCurve(208575);
+  for (int i = 0; i < sharpEdges.size(); i++) {
+    expandFeatureCurve(sharpEdges[i]);
+  }
+  colorFeatures();
+}
+
+void Segmentation::colorSharpEdges() {
+  // viewer.append_mesh();
+  if (debug) cout << "show_lines " << viewer->data().show_lines << endl;
+  viewer->data().show_lines = false;
+  if (debug) cout << "show_lines " << viewer->data().show_lines << endl;
+
+  /*cout << "point_size " << viewer->data().point_size << endl;
+  viewer->data().point_size = 60.0f;
+  cout << "point_size " << viewer->data().point_size << endl;
+
+  cout << "linewidth " << viewer->data().line_width << endl;
+  viewer->data().line_width = 500.0f;
+  cout << "linewidth " << viewer->data().line_width << endl;*/
+  MatrixXd e1(2 * nEdges, 3);
+  MatrixXd e2(2 * nEdges, 3);
+  int i = 0;
+  for (int e = 0; e < 2 * nEdges; e++) {
+    if ((*EdgeSharpness)(EdgeMap[e]) < threshold) {
+      continue;
+    }
+    sharpEdges.push_back(e);
+    // cout << "e: " << e << endl;
+
+    e1.row(i) << V->row(he->getTarget(e));
+    e2.row(i) << V->row(he->getTarget(he->getOpposite(e)));
+    i++;
+  }
+  // cout << "linewidth " << viewer->data().line_width << endl;
+  /*viewer->data().add_edges(
+          e1,
+          e2,
+          Eigen::RowVector3d(1, 0, 0));
+          */
+}
+
+void Segmentation::colorFeatures() {
+  MatrixXd e1(2 * nEdges, 3);
+  MatrixXd e2(2 * nEdges, 3);
+  int i = 0;
+  for (int e = 0; e < 2 * nEdges; e++) {
+    if (tag[e] != 1) {
+      continue;
+    }
+    // cout << "e: " << e << endl;
+
+    e1.row(i) << V->row(he->getTarget(e));
+    e2.row(i) << V->row(he->getTarget(he->getOpposite(e)));
+    i++;
+  }
+  // cout << "linewidth " << viewer->data().line_width << endl;
+  // cout << "e1: " << e1 << endl;
+  // for (int i=0; i<2*nEdges; i++) {
+  //	cout << tag[i] << " ";
+  //}
+  viewer->data().add_edges(e1, e2, Eigen::RowVector3d(1, 0, 0));
+}
+
+Vector3d Segmentation::getNormal(int f) {
+  // returns normal vector to face f
+  Vector3d v1 = V->row((*F)(f, 1)) - V->row((*F)(f, 0));
+  Vector3d v2 = V->row((*F)(f, 2)) - V->row((*F)(f, 0));
+  return v1.cross(v2).normalized();
+}
+
+float Segmentation::getEdgeSharpness(int e) {
+  // returns angle between normals to the faces adjacent to edge e
+  int f1 = he->getFace(e);
+  int f2 = he->getFace(he->getOpposite(e));
+  if (f1 == -1 || f2 == -1) {
+    return M_PI;
+  }
+  Vector3d n1 = getNormal(f1);
+  Vector3d n2 = getNormal(f2);
+  return acos(n1.dot(n2));
+}
+
+void Segmentation::getEdgeSharpnessMatrix() {
+  // Assign a number, between 1..nEdges, to all halfedges
+  EdgeMap.assign(2 * nEdges,0);
+  for (int e = 0; e < 2 * nEdges; e++) {
+    EdgeMap[e] = -1;
+  }
+  int i = 0;
+  for (int e = 0; e < 2 * nEdges; e++) {
+    if (EdgeMap[e] != -1) {
+      continue;
+    }
+    EdgeMap[e] = i;
+    EdgeMap[he->getOpposite(e)] = i;
+    i++;
+  }
+  // Fill the EdgeSharpness Matrix with the sharpness criterion (angle between
+  // normals) for each edge
+  for (int e = 0; e < 2 * nEdges; e++) {
+    int i = EdgeMap[e];
+    EdgeSharpness->row(i) << getEdgeSharpness(e);
+  }
+  // cout << *EdgeSharpness << endl;
+}
+
+void Segmentation::setThreshold(float newThreshold) { threshold = newThreshold; }
+float Segmentation::getThreshold() { return threshold; }
+
+vector<int> Segmentation::getInNeighbours(int v) {  // in-going halfedges incident to vertex v
+  vector<int> neighbours = vector<int>();
+  int startEdge = he->getEdge(v);
+  neighbours.push_back(startEdge);
+  int edge = he->getOpposite(he->getNext(startEdge));
+  while (edge != startEdge) {
+    edge = he->getOpposite(he->getNext(edge));
+    neighbours.push_back(edge);
+  }
+  return neighbours;
+}
+
+vector<int> Segmentation::getOutNeighbours(
+    int v) {  // out-going halfedges incident from vertex v
+  vector<int> neighbours = vector<int>();
+  int startEdge = he->getOpposite(he->getEdge(v));
+  neighbours.push_back(startEdge);
+  int edge = he->getNext(he->getOpposite(startEdge));
+  while (edge != startEdge) {
+    edge = he->getNext(he->getOpposite(edge));
+    neighbours.push_back(edge);
+  }
+  return neighbours;
+}
+
+pair<float, vector<int>> Segmentation::DFS(int current, vector<int> &S, float sharpness,
+                             int length, int maxStringLength) {
+  if (length == maxStringLength) {
+    return pair<float, vector<int>>(sharpness, S);
+  }
+  vector<int> bestS;
+  float bestSharpness = sharpness;
+  vector<int> outNeighbours = getOutNeighbours(he->getTarget(current));
+  for (int i = 0; i < outNeighbours.size(); i++) {
+    int next = outNeighbours[i];
+    if (next == he->getOpposite(current) || tag[next] == 2) {
+      continue;
+    }
+    S.push_back(next);
+    pair<float, vector<int>> result =
+        DFS(next, S, sharpness + (*EdgeSharpness)(EdgeMap[next]), length + 1,
+            maxStringLength);
+    S.pop_back();
+    if (result.first > bestSharpness) {
+      bestSharpness = result.first;
+      bestS = result.second;
+    }
+  }
+  return pair<float, vector<int>>(bestSharpness, bestS);
+}
+
+void Segmentation::tagNeighbours(int v) {
+  vector<int> neighbours = getInNeighbours(v);
+  for (int j = 0; j < neighbours.size(); j++) {
+    if (tag[neighbours[j]] == 0) {
+      tag[neighbours[j]] = 2;
+    }
+  }
+  neighbours = getOutNeighbours(v);
+  for (int j = 0; j < neighbours.size(); j++) {
+    if (tag[neighbours[j]] == 0) {
+      tag[neighbours[j]] = 2;
+    }
+  }
+}
+
+void Segmentation::expandFeatureCurve(int startEdge) {
+  if (debug) cout << "called with startEdge: " << startEdge << endl;
+  vector<int> detectedFeature(0);
+  int maxStringLength = 5;
+  int minFeatureLength = 15;
+  int edges[] = {startEdge, he->getOpposite(startEdge)};
+  for (const int &edge : edges) {
+    int current = edge;
+    float sharpness = 0;
+    do {
+      vector<int> S(0);
+      S.push_back(current);
+      pair<float, vector<int>> result = DFS(
+          current, S, (*EdgeSharpness)(EdgeMap[current]), 1, maxStringLength);
+      S = result.second;
+      sharpness = result.first;
+
+      if (debug) {
+        cout << "S: " << endl;
+        print(S);
+        cout << "detectedFeature: " << endl;
+        print(detectedFeature);
+      }
+      // cout << "S is " << S << endl;
+
+      if (S.size() < 2) {
+        break;
+      }
+
+      current = S[1];
+      if (find(detectedFeature.begin(), detectedFeature.end(), current) !=
+          detectedFeature.end()) {
+        break;
+      }
+      detectedFeature.push_back(current);
+      if (debug) {
+        cout << "sharpness: " << sharpness << endl;
+        cout << "maxStringLength * threshold: " << maxStringLength * threshold
+             << endl;
+        cout << "edge: " << edge << endl;
+      }
+    } while (sharpness > maxStringLength * threshold);
+  }
+  // cout << detectedFeature.size() << " < 15 " << endl;
+  if (detectedFeature.size() > minFeatureLength) {
+    if (debug) {
+      cout << "activé " << endl;
+      // tag elements of detectedFeature as feature
+      cout << "detectedFeature: " << endl;
+      print(detectedFeature);
+    }
+
+    for (int i = 0; i < detectedFeature.size(); i++) {
+      if (debug) {
+        cout << "i: " << i << endl;
+        cout << "detectedFeature[i]: " << detectedFeature[i] << endl;
+      }
+      tag[detectedFeature[i]] = 1;
+    }
+    if (debug) cout << "yo " << endl;
+    // tag neighbours of detectedFeature as feature neighbor
+    int start = he->getTarget(he->getOpposite(detectedFeature[0]));
+    tagNeighbours(start);
+    for (int i = 0; i < detectedFeature.size(); i++) {
+      int current = he->getTarget(detectedFeature[i]);
+      if (debug) cout << "hey" << endl;
+      tagNeighbours(current);
+    }
+  }
+}
+
+void Segmentation::print(vector<int> v) {
+  std::ostringstream oss;
+  if (!v.empty()) {
+    std::copy(v.begin(), v.end() - 1, std::ostream_iterator<int>(oss, ","));
+    oss << v.back();
+    std::cout << oss.str() << std::endl;
+  }
+}

@@ -1,44 +1,43 @@
 #pragma once
 
-#include <igl/opengl/glfw/Viewer.h>
-#include <vector>
+#include <set>
 #include <utility>
 
 #include "halfedge/HalfedgeDS.hpp"
 
+struct dfsResult {
+  double sharpness;
+  int second;
+};
+
 class Segmentation {
  public:
-  Segmentation(Eigen::MatrixXd &V_original, Eigen::MatrixXi &F_original, HalfedgeDS &mesh,
-               igl::opengl::glfw::Viewer &viewer_);
-  void colorSharpEdges();
-  void colorFeatures();
-  Eigen::Vector3d getNormal(int f);
-  float getEdgeSharpness(int e);
-  void getEdgeSharpnessMatrix();
-  void setThreshold(float newThreshold);
-  float getThreshold();
-  std::vector<int> getInNeighbours(int v);
-  std::vector<int> getOutNeighbours(int v);
-  std::pair<float, std::vector<int>> DFS(int current, std::vector<int> &S,
-                                         float sharpness, int length,
-                                         int maxStringLength);
-  void tagNeighbours(int v);
-  void expandFeatureCurve(int startEdge);
-  void print(std::vector<int> v);
+
+  Segmentation(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, igl::opengl::glfw::Viewer &viewer);
+  void colorInitialFeatures();
 
  private:
-  int debug;
-  igl::opengl::glfw::Viewer *viewer;
-  float threshold;
-  int *EdgeMap;
-  std::vector<int> sharpEdges;
-  int *tag;
-  /** Half-edge representation of the original input mesh */
-  HalfedgeDS *he;
-  Eigen::MatrixXd *V;  // vertex coordinates of the original input mesh
-  Eigen::MatrixXi *F;  // REMARK: not needed if using the half-edge data structure
-  Eigen::VectorXd *EdgeSharpness;
 
-  int nEdges;
-  // int nVertices, nFaces; // number of vertices, faces
+  void findInitialFeatures();
+  void expandFeatureCurve(int start);
+  double sharpness(int h);
+  Eigen::Vector3d normal(int f);
+  dfsResult dfs(int u, int depth, double sharp, int second);
+  std::vector<int> outNeighbors(int h);
+  std::vector<int> inNeighbors(int h);
+  void tagFeatures(std::vector<int> &features);
+  void tagAsFeature(int h);
+  void tagNeighborhood(int h);
+  void tagAsNeighbor(int h);
+  void colorEdge(int h);
+
+  HalfedgeDS heds;
+  const Eigen::MatrixXd &V;
+  const Eigen::MatrixXi &F;
+  igl::opengl::glfw::Viewer &viewer;
+  std::vector<int> tag;
+  const int max_string_length = 5;
+  const int min_feature_length = 15;
+  double threshold;
+  std::set<std::pair<double,int>> top_features;
 };

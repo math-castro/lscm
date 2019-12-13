@@ -229,5 +229,5 @@ private:
 
 	int *faces; // for each face we store an incident halfedge
 
-	const int sizeT = 5;
+	static const int sizeT = 5;
 };

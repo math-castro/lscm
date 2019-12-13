@@ -28,81 +28,89 @@ int main(int argc, char *argv[]) {
 
   igl::opengl::glfw::Viewer viewer;  // create the 3d viewer
 
-  //  viewer.data().set_mesh(V, F);
-  //  viewer.append_mesh(true);
+  viewer.data().set_mesh(V, F);
+  viewer.data().show_lines = false;
+  viewer.data().set_colors(RowVector3d(1,1,1));
 
-  //	HalfedgeBuilder *builder = new HalfedgeBuilder();
-  //	HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create
-  //the half-edge representation 	Segmentation *segmentation = new
-  //Segmentation(V, F, he, viewer);
-  vector<MatrixXd> Vs;
-  vector<MatrixXi> Fs;
-  Vs.reserve(F.rows());
-  Fs.reserve(F.rows());
+  viewer.append_mesh(true);
+  viewer.data().show_lines = true;
+  // viewer.data().line_width = 10;
 
-  for (int i = 0; i < F.rows(); i++) {
-    Vs.emplace_back(MatrixXd::Zero(3, 3));
-    Vs.back().row(0) = V.row(F(i, 0));
-    Vs.back().row(1) = V.row(F(i, 1));
-    Vs.back().row(2) = V.row(F(i, 2));
-    Fs.emplace_back(MatrixXi::Zero(1,3));
-    Fs.back()(0,1) = 1;
-    Fs.back()(0,2) = 2; 
-  }
+  HalfedgeBuilder hb;
+  // hb.createMeshWithFaces(V.rows(),F);
 
-  vector<const MatrixXd *> pVs;
-  vector<const MatrixXi *> pFs;
-  pVs.reserve(F.rows());
-  pFs.reserve(F.rows());
+  // return 0;
+  Segmentation segmentation(V, F, viewer);
+  segmentation.colorInitialFeatures();
 
-  for (auto &V : Vs) pVs.emplace_back(&V);
-  for (auto &F : Fs) pFs.emplace_back(&F);
+  // vector<MatrixXd> Vs;
+  // vector<MatrixXi> Fs;
+  // Vs.reserve(F.rows());
+  // Fs.reserve(F.rows());
 
-  vector<MatrixXd> Us = parametrize(pVs, pFs);
-  vector<MatrixXd *> pUs;
-  for (auto &U : Us) pUs.emplace_back(&U);
+  // for (int i = 0; i < F.rows(); i++) {
+  //   Vs.emplace_back(MatrixXd::Zero(3, 3));
+  //   Vs.back().row(0) = V.row(F(i, 0));
+  //   Vs.back().row(1) = V.row(F(i, 1));
+  //   Vs.back().row(2) = V.row(F(i, 2));
+  //   Fs.emplace_back(MatrixXi::Zero(1,3));
+  //   Fs.back()(0,1) = 1;
+  //   Fs.back()(0,2) = 2; 
+  // }
 
-  //  viewer.data().set_mesh(*Vs[0], *Fs[0]);
-  //  viewer.data().set_uv(Us[0]);
-  //  viewer.data().show_texture = true;
+  // vector<const MatrixXd *> pVs;
+  // vector<const MatrixXi *> pFs;
+  // pVs.reserve(F.rows());
+  // pFs.reserve(F.rows());
 
-  typedef Matrix<unsigned char, -1, -1> MatrixXc;
-  MatrixXc R, G, B;
-  const int n = 10;
-  R = 255 * MatrixXc::Ones(n, n);
-  G = 255 * MatrixXc::Ones(n, n);
-  B = 255 * MatrixXc::Ones(n, n);
+  // for (auto &V : Vs) pVs.emplace_back(&V);
+  // for (auto &F : Fs) pFs.emplace_back(&F);
 
-  for (int i = 0; i < n; i += 10)
-    for (int j = 0; j < n; j++) G(i, j) = B(i, j) = 0;
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
+  // vector<MatrixXd> Us = parametrize(pVs, pFs);
+  // vector<MatrixXd *> pUs;
+  // for (auto &U : Us) pUs.emplace_back(&U);
 
-  //  viewer.data().set_texture(R,G,B);
-  //  viewer.data().set_colors(RowVector3d(1,1,1));
-  // viewer.core().lighting_factor = 0;
+  // //  viewer.data().set_mesh(*Vs[0], *Fs[0]);
+  // //  viewer.data().set_uv(Us[0]);
+  // //  viewer.data().show_texture = true;
 
-  pUs.reserve(Us.size());
+  // typedef Matrix<unsigned char, -1, -1> MatrixXc;
+  // MatrixXc R, G, B;
+  // const int n = 10;
+  // R = 255 * MatrixXc::Ones(n, n);
+  // G = 255 * MatrixXc::Ones(n, n);
+  // B = 255 * MatrixXc::Ones(n, n);
 
-  pack(pVs, pUs, pFs);
+  // for (int i = 0; i < n; i += 10)
+  //   for (int j = 0; j < n; j++) G(i, j) = B(i, j) = 0;
+  // for (int i = 0; i < n; i++)
+  //   for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
 
-  for (int i = 0; i < Us.size(); i++) {
-    auto &U = Us[i];
-    auto &T = Fs[i];
+  // //  viewer.data().set_texture(R,G,B);
+  // //  viewer.data().set_colors(RowVector3d(1,1,1));
+  // // viewer.core().lighting_factor = 0;
 
-    viewer.append_mesh();
+  // pUs.reserve(Us.size());
 
-    MatrixXd new_U = MatrixXd::Zero(U.rows(), 3);
-    new_U.col(0) = U.col(0);
-    new_U.col(1) = U.col(1);
+  // pack(pVs, pUs, pFs);
 
-    viewer.data().set_mesh(new_U,T);
-    // viewer.data().set_texture(R,G,B);
-    // viewer.data().show_texture = true;
-    viewer.data().set_colors(RowVector3d(1,1,1));
+  // for (int i = 0; i < Us.size(); i++) {
+  //   auto &U = Us[i];
+  //   auto &T = Fs[i];
 
-    // cout << new_U << endl;
-  }
+  //   viewer.append_mesh();
+
+  //   MatrixXd new_U = MatrixXd::Zero(U.rows(), 3);
+  //   new_U.col(0) = U.col(0);
+  //   new_U.col(1) = U.col(1);
+
+  //   viewer.data().set_mesh(new_U,T);
+  //   // viewer.data().set_texture(R,G,B);
+  //   // viewer.data().show_texture = true;
+  //   viewer.data().set_colors(RowVector3d(1,1,1));
+
+  //   // cout << new_U << endl;
+  // }
 
   viewer.core(0).align_camera_center(V, F);
   viewer.launch();  // run the viewer
