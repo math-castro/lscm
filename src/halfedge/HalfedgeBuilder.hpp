@@ -16,8 +16,8 @@
 
 #include "halfedge/HalfedgeDS.hpp"
 
-//using namespace Eigen;
-//using namespace std;
+using namespace Eigen;
+using namespace std;
 
 struct VertexPair
 {

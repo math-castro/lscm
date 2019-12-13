@@ -15,9 +15,6 @@
 #include <iostream>
 #include <ostream>
 
-// using namespace Eigen;
-using namespace std;
-
 /**
  * @author Luca Castelli Aleardi (2019)
  * Minimal array-based implementation of a the Half-edge data structure for representing polygonal meshes<br>
@@ -202,6 +199,7 @@ public:
 	 **/
 	void print()
 	{
+		using namespace std;
 		for (int i = 0; i < nHalfedges; i++)
 		{
 			cout << "he" << i << ": \t" << T[sizeT * i] << "\t" << T[sizeT * i + 1] << "\t" << T[sizeT * i + 2] << "\t" << T[sizeT * i + 3] << endl;

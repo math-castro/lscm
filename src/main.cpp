@@ -4,8 +4,8 @@
 #include <igl/readPLY.h>
 #include <igl/readOBJ.h>
 
-#include "halfedge/HalfedgeBuilder.cpp"
-#include "segmentation/segmentation.cpp"
+#include "halfedge/HalfedgeBuilder.hpp"
+#include "segmentation/segmentation.hpp"
 #include "parametrization/parametrization.hpp"
 #include "packing/packing.hpp"
 
