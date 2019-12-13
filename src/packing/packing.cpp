@@ -73,23 +73,24 @@ void alignBottomLeft(Eigen::MatrixXd &U) {
 Chart horizon(const MatrixXd &U, double resolution) {
   map<int, int> upper_horizon, lower_horizon;
   int max_y = 0;
+  const int margin = 10;
 
   for(int i = 0; i < U.rows(); i++) {
     int x = (int)lround(U(i,0)/resolution);
     int y = (int)lround(U(i,1)/resolution);
     max_y = max(max_y, y);
     if(lower_horizon.count(x)) {
-      lower_horizon[x] = min(lower_horizon[x], y-1);
-      upper_horizon[x] = max(upper_horizon[x], y+1);
+      lower_horizon[x] = min(lower_horizon[x], y);
+      upper_horizon[x] = max(upper_horizon[x], y+margin);
     }
     else {
-      lower_horizon[x] = y-1;
-      upper_horizon[x] = y+1;
+      lower_horizon[x] = y;
+      upper_horizon[x] = y+margin;
     }
   }
   int max_x = lower_horizon.rbegin()->first;
 
-  vector<int> lh(max_x+1),uh(max_x+1);
+  vector<int> lh(max_x+1+margin),uh(max_x+1+margin);
 
   for(int i = 0; i <= max_x; i++) {
     if(lower_horizon.count(i)) {
@@ -105,6 +106,10 @@ Chart horizon(const MatrixXd &U, double resolution) {
       prev = next; --prev;
       uh[i] = prev->second + (next->second-prev->second)*(i-prev->first)/(next->first-prev->first);
     }
+  }
+  for(int i = max_x+1; i < max_x+1+margin; i++) {
+    lh[i] = lh[max_x];
+    uh[i] = uh[max_x];
   }
 
   return {lh, uh, max_y, max_x};
@@ -130,11 +135,11 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
     alignBottomLeft(U);
   }
 
-  double resolution = 0;
+  double resolution = DBL_MAX;
 
   for(auto pU : Us) {
     auto &U = *pU;
-    resolution = max(resolution, U.maxCoeff()/100);
+    resolution = min(resolution, U.maxCoeff()/100);
   }
 
   for(int i = 0; i < Us.size(); i++) {
@@ -166,6 +171,7 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
     if(fr.ok) r = m;
     else l = m;
   }
+    fr = canFit(r, resolution, charts, id);
 
   for (int i = 0; i < id.size(); i++) {
     translateU(*Us[id[i]], fr.dx[i], fr.dy[i], resolution);

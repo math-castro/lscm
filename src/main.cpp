@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
   //  viewer.data().set_texture(R,G,B);
   //  viewer.data().set_colors(RowVector3d(1,1,1));
-  viewer.core().lighting_factor = 0;
+  // viewer.core().lighting_factor = 0;
 
   pUs.reserve(Us.size());
 
