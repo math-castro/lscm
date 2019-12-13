@@ -2,6 +2,7 @@
 
 #include <set>
 #include <utility>
+#include <queue>
 
 #include "halfedge/HalfedgeDS.hpp"
 
@@ -14,7 +15,9 @@ class Segmentation {
  public:
 
   Segmentation(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, igl::opengl::glfw::Viewer &viewer);
+  void expandFeatureCurves();
   void colorInitialFeatures();
+  void colorExpandedFeatures();
 
  private:
 
@@ -22,12 +25,12 @@ class Segmentation {
   void expandFeatureCurve(int start);
   double sharpness(int h);
   Eigen::Vector3d normal(int f);
-  dfsResult dfs(int u, int depth, double sharp, int second);
+  dfsResult dfs(int u, int depth, double sharp, int second, std::set<int> &detected_feature);
   std::vector<int> outNeighbors(int h);
   std::vector<int> inNeighbors(int h);
   void tagFeatures(std::vector<int> &features);
   void tagAsFeature(int h);
-  void tagNeighborhood(int h);
+  void tagNeighborhoods(std::queue<std::pair<int,int>> &q, int depth);
   void tagAsNeighbor(int h);
   void colorEdge(int h);
 

@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
 
   // return 0;
   Segmentation segmentation(V, F, viewer);
-  segmentation.colorInitialFeatures();
+  segmentation.expandFeatureCurves();
+  segmentation.colorExpandedFeatures();
 
   // vector<MatrixXd> Vs;
   // vector<MatrixXi> Fs;
