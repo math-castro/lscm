@@ -70,18 +70,21 @@ void alignBottomLeft(Eigen::MatrixXd &U) {
   }
 }
 
-pair<vector<int>, vector<int>> horizon(const MatrixXd &U, double resolution) {
+Chart horizon(const MatrixXd &U, double resolution) {
   map<int, int> upper_horizon, lower_horizon;
+  int max_y = 0;
+
   for(int i = 0; i < U.rows(); i++) {
     int x = (int)lround(U(i,0)/resolution);
     int y = (int)lround(U(i,1)/resolution);
+    max_y = max(max_y, y);
     if(lower_horizon.count(x)) {
-      lower_horizon[x] = min(lower_horizon[x], y);
-      upper_horizon[x] = max(upper_horizon[x], y);
+      lower_horizon[x] = min(lower_horizon[x], y-1);
+      upper_horizon[x] = max(upper_horizon[x], y+1);
     }
     else {
-      lower_horizon[x] = y;
-      upper_horizon[x] = y;
+      lower_horizon[x] = y-1;
+      upper_horizon[x] = y+1;
     }
   }
   int max_x = lower_horizon.rbegin()->first;
@@ -104,7 +107,7 @@ pair<vector<int>, vector<int>> horizon(const MatrixXd &U, double resolution) {
     }
   }
 
-  return pair<vector<int>, vector<int>>(lh, uh);
+  return {lh, uh, max_y, max_x};
 }
 
 void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixXi*> Ts) {
@@ -112,11 +115,10 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
   auto start = chrono::high_resolution_clock::now();
   vector<double> d;
   vector<int> id;
-  vector<vector<int>> lh, uh;
+  vector<Chart> charts;
   d.reserve(Xs.size());
   id.reserve(Xs.size());
-  lh.reserve(Xs.size());
-  uh.reserve(Xs.size());
+  charts.reserve(Xs.size());
 
   for(int i = 0; i < Us.size(); i++) {
     const MatrixXd &X = *Xs[i];
@@ -140,11 +142,7 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
     MatrixXd &U = *Us[i];
     const MatrixXi &T = *Ts[i];
 
-    auto ph = horizon(U, resolution);
-    lh.emplace_back(ph.first);
-    ph.first.clear();
-    uh.emplace_back(ph.second);
-    ph.second.clear();
+    charts.emplace_back(horizon(U, resolution));
 
     auto diam = findDiameter(U);
     d.emplace_back((U.row(diam.first) - U.row(diam.second)).norm());
@@ -154,13 +152,36 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
   auto comp = [&](int a, int b) {return d[a] > d[b];};
   sort(id.begin(), id.end(), comp);
 
-  vector<int> hor = {0};
-  for(int i : id) {
-    pair<int,int> xy = calculateBestXY(hor, lh[i]);
-    int x = xy.first, y = xy.second;
-    updateHorizon(hor, uh[i], x, y);
-    translateU(*Us[i], x, y, resolution);
+  double size = sqrt(totalArea(Us, Ts));
+  vector<int> hor;
+  vector<int> dx, dy;
+
+  for(double size = sqrt(totalArea(Us, Ts));;size *= 1.1) {
+    cout << size << endl;
+    bool ok = true;
+    hor.assign(size/resolution, 0);
+    dx.clear(), dy.clear();
+
+    for (int i : id) {
+      pair<int, int> xy = calculateBestXY(hor, charts[i], size/resolution);
+      int x = xy.first, y = xy.second;
+      if (x==-1 and y==-1) {
+        ok = false;
+        break;
+      }
+      updateHorizon(hor, charts[i], x, y);
+      dx.emplace_back(x);
+      dy.emplace_back(y);
+    }
+
+    if(ok) break;
+    else continue;
   }
+
+  for (int i = 0; i < id.size(); i++) {
+    translateU(*Us[id[i]], dx[i], dy[i], resolution);
+  }
+
   auto finish = chrono::high_resolution_clock::now();
   cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
 }
@@ -171,7 +192,7 @@ int calculateDY(vector<int> &hor, vector<int> &lh, int x) {
     if(x+i < hor.size())
       dy = max(dy, hor[x+i]-lh[i]+1);
     else
-      dy = max(dy, 0);
+      throw "Out of bounds";
   }
   return dy;
 }
@@ -182,17 +203,19 @@ int calculateAreaUnder(vector<int> &hor, vector<int> &lh, int x, int y) {
     if(x+i < hor.size())
       a += lh[i]+y-hor[x+i];
     else
-      a += lh[i]+y;
+      throw "Out of bounds";
   }
   return a;
 }
 
-pair<int,int> calculateBestXY(vector<int> &hor, vector<int> &lh) {
+pair<int,int> calculateBestXY(vector<int> &hor, Chart &chart, int MAX_Y) {
   int min_area = 0x3f3f3f3f;
   int best_x = 0;
   int best_y = 0;
-  for(int i = 0; i <= hor.size(); i++) {
+  vector<int> &lh = chart.lh;
+  for(int i = 0; i + lh.size() <= hor.size(); i++) {
     int dy = calculateDY(hor, lh, i);
+    if(dy+chart.max_y >= MAX_Y) continue;
     int a = calculateAreaUnder(hor, lh, i, dy);
     if(a < min_area) {
       min_area = a;
@@ -200,15 +223,17 @@ pair<int,int> calculateBestXY(vector<int> &hor, vector<int> &lh) {
       best_y = dy;
     }
   }
+  if(min_area == 0x3f3f3f3f) return {-1,-1};
   return {best_x, best_y};
 }
 
-void updateHorizon(vector<int> &hor, vector<int> &uh, int x, int y) {
+void updateHorizon(vector<int> &hor, Chart &chart, int x, int y) {
+  vector<int> &uh = chart.uh;
   for(int i = 0; i < uh.size(); i++) {
     if(x+i < hor.size())
       hor[x+i] = uh[i]+y;
     else
-      hor.push_back(uh[i]+y);
+      throw "Out of bounds";
   }
 }
 
@@ -218,4 +243,11 @@ void translateU(MatrixXd &U, int x, int y, double resolution) {
     U(i,0) += dx;
     U(i,1) += dy;
   }
+}
+
+double totalArea(std::vector<Eigen::MatrixXd*> Us, std::vector<const Eigen::MatrixXi*> Ts) {
+  double a = 0;
+  for(int i = 0; i < Us.size(); i++)
+    a += area(*Us[i], *Ts[i]);
+  return a;
 }
