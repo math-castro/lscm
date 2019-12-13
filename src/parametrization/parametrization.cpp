@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <cmath>
+#include <chrono>
+#include <Eigen/IterativeLinearSolvers>
 
 using namespace Eigen;
 using namespace std;
@@ -9,10 +11,17 @@ using namespace std;
 typedef Triplet<double> Td;
 
 vector<MatrixXd> parametrize(vector<const MatrixXd*> &Vs, vector<const MatrixXi*> &Ts) {
+  cout << "Started parametrization:..." << flush;
+  auto start = chrono::high_resolution_clock::now();
+
   vector<MatrixXd> Us;
   Us.reserve(Vs.size());
   for(int i = 0; i < Vs.size(); i++)
     Us.emplace_back(parametrize(*Vs[i], *Ts[i]));
+
+  auto finish = chrono::high_resolution_clock::now();
+  cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+
   return Us;
 }
 
@@ -78,9 +87,15 @@ MatrixXd parametrize(const MatrixXd &V, const MatrixXi &T) {
   VectorXd b = - B * up;
 
   // Solve least squares using QR decomposition
+  // A.makeCompressed();
+  // SparseQR<SparseMatrix<double>, COLAMDOrdering<int> > solver(A);
+  // VectorXd uf = solver.solve(b);
+
+  // Solve least squares using iterative CG
   A.makeCompressed();
-  SparseQR<SparseMatrix<double>, COLAMDOrdering<int> > solver(A);
+  LeastSquaresConjugateGradient<SparseMatrix<double>> solver(A);
   VectorXd uf = solver.solve(b);
+
 
   // Join uf and up
   MatrixXd U(n, 2);

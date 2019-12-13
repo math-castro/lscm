@@ -5,6 +5,7 @@
 #include <cfloat>
 #include <map>
 #include <algorithm>
+#include <chrono>
 
 using namespace Eigen;
 using namespace std;
@@ -107,6 +108,8 @@ pair<vector<int>, vector<int>> horizon(const MatrixXd &U, double resolution) {
 }
 
 void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixXi*> Ts) {
+  cout << "Started packing:..." << flush;
+  auto start = chrono::high_resolution_clock::now();
   vector<double> d;
   vector<int> id;
   vector<vector<int>> lh, uh;
@@ -158,6 +161,8 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
     updateHorizon(hor, uh[i], x, y);
     translateU(*Us[i], x, y, resolution);
   }
+  auto finish = chrono::high_resolution_clock::now();
+  cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
 }
 
 int calculateDY(vector<int> &hor, vector<int> &lh, int x) {

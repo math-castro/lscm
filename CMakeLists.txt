@@ -10,6 +10,9 @@ add_compile_options(-Wall -Wextra)
 # CMake
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# set(Eigen3_DIR "~/opt/include/eigen3/Eigen")
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 # libigl
 option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
 option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
