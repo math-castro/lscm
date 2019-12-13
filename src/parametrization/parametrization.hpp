@@ -2,7 +2,8 @@
 
 #include <igl/opengl/glfw/Viewer.h>
 
-Eigen::MatrixX2d parametrize(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T);
+std::vector<Eigen::MatrixXd> parametrize(std::vector<const Eigen::MatrixXd*> &Vs, std::vector<const Eigen::MatrixXi*> &Ts);
+Eigen::MatrixXd parametrize(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T);
 double angleBetweenSides(const Eigen::RowVectorXd &a, const Eigen::RowVectorXd &b);
 std::pair<int, int> approximateDiameter(const Eigen::MatrixXd &V);
 void emplaceAB(std::vector<Eigen::Triplet<double>> &ta,
