@@ -8,8 +8,10 @@ using namespace std;
 
 typedef Triplet<double> Td;
 
-MatrixX2d parametrize(MatrixXd &V, MatrixXi &T) {
+MatrixX2d parametrize(const MatrixXd &V, const MatrixXi &T) {
   const int np = T.rows(), n = V.rows();
+
+  pair<int,int> diam = approximateDiameter(V);
 
   // List of triplets for sparse matrix creation
   vector<Td> ta, tb, tu;
@@ -45,45 +47,9 @@ MatrixX2d parametrize(MatrixXd &V, MatrixXi &T) {
 
 
     // Push values to A and B
-    if (T(i, 0) < n - 2) {
-      int j = T(i, 0);
-      ta.emplace_back(i, j, Wr[0]);
-      ta.emplace_back(i + np, j + n - 2, Wr[0]);
-      ta.emplace_back(i, j + n - 2, - Wi[0]);
-      ta.emplace_back(i + np, j, Wi[0]);
-    } else {
-      int j = T(i, 0) - n + 2;
-      tb.emplace_back(i, j, Wr[0]);
-      tb.emplace_back(i + np, j + 2, Wr[0]);
-      tb.emplace_back(i, j + 2, -Wi[0]);
-      tb.emplace_back(i + np, j, Wi[0]);
-    }
-    if (T(i, 1) < n - 2) {
-      int j = T(i, 1);
-      ta.emplace_back(i, j, Wr[1]);
-      ta.emplace_back(i + np, j + n - 2, Wr[1]);
-      ta.emplace_back(i, j + n - 2, - Wi[1]);
-      ta.emplace_back(i + np, j, Wi[1]);
-    } else {
-      int j = T(i, 1) - n + 2;
-      tb.emplace_back(i, j, Wr[1]);
-      tb.emplace_back(i + np, j + 2, Wr[1]);
-      tb.emplace_back(i, j + 2, - Wi[1]);
-      tb.emplace_back(i + np, j, Wi[1]);
-    }
-    if (T(i, 2) < n - 2) {
-      int j = T(i, 2);
-      ta.emplace_back(i, j, Wr[2]);
-      ta.emplace_back(i + np, j + n - 2, Wr[2]);
-      ta.emplace_back(i, j + n - 2, -Wi[2]);
-      ta.emplace_back(i + np, j, Wi[2]);
-    } else {
-      int j = T(i, 2) - n + 2;
-      tb.emplace_back(i, j, Wr[2]);
-      tb.emplace_back(i + np, j + 2, Wr[2]);
-      tb.emplace_back(i, j + 2, -Wi[2]);
-      tb.emplace_back(i + np, j, Wi[2]);
-    }
+    emplaceAB(ta, tb, i, T(i,0), n, np, Wr[0], Wi[0], diam);
+    emplaceAB(ta, tb, i, T(i,1), n, np, Wr[1], Wi[1], diam);
+    emplaceAB(ta, tb, i, T(i,2), n, np, Wr[2], Wi[2], diam);
   }
 
   // Build A and B
@@ -110,16 +76,54 @@ MatrixX2d parametrize(MatrixXd &V, MatrixXi &T) {
 
   // Join uf and up
   MatrixX2d U(n, 2);
-  for (int i = 0; i < n - 2; i++) {
-    U(i, 0) = uf(i);
-    U(i, 1) = uf(i + n - 2);
+  for(int i = 0; i < n; i++) {
+    if(i != diam.first and i != diam.second) {
+      int ii = i;
+      if(i > diam.second) ii--;
+      if(i > diam.first) ii--;
+      U(i,0) = uf(ii);
+      U(i,1) = uf(ii + n - 2);
+    }
+    else
+      U(i,0) = U(i,1) = (i==diam.second);
   }
-  U(n - 2, 0) = U(n - 2, 1) = 0;
-  U(n - 1, 0) = U(n - 1, 1) = 1;
 
   return U;
 }
 
 double angleBetweenSides(const RowVectorXd &a, const RowVectorXd &b) {
   return acos(a.dot(b) / a.norm() / b.norm());
+}
+
+pair<int,int> approximateDiameter(const MatrixXd &V) {
+  const int n = V.rows();
+  double m = 0;
+  pair<int,int> best{0,1};
+  for(int i = 0; i < n; i++) {
+    for(int j = i+1; j < n; j++) {
+      double d = (V.row(i)-V.row(j)).norm();
+      if(d>m) {
+        m = d;
+        best = pair<int,int>{i,j};
+      }
+    }
+  }
+  return best;
+}
+
+void emplaceAB(vector<Td> &ta, vector<Td> &tb, int i, int j, int n, int np, double wr, double wi, pair<int,int> &diam) {
+  if (j != diam.first and j != diam.second) {
+    if(j > diam.second) j--;
+    if(j > diam.first) j--;
+    ta.emplace_back(i, j, wr);
+    ta.emplace_back(i + np, j + n - 2, wr);
+    ta.emplace_back(i, j + n - 2, -wi);
+    ta.emplace_back(i + np, j, wi);
+  } else {
+    j = (j==diam.second);
+    tb.emplace_back(i, j, wr);
+    tb.emplace_back(i + np, j + 2, wr);
+    tb.emplace_back(i, j + 2, -wi);
+    tb.emplace_back(i + np, j, wi);
+  }
 }
