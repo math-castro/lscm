@@ -155,35 +155,44 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
   double size = sqrt(totalArea(Us, Ts));
   vector<int> hor;
   vector<int> dx, dy;
+  FitResult fr;
 
-  for(double size = sqrt(totalArea(Us, Ts));;size *= 1.1) {
-    cout << size << endl;
-    bool ok = true;
-    hor.assign(size/resolution, 0);
-    dx.clear(), dy.clear();
-
-    for (int i : id) {
-      pair<int, int> xy = calculateBestXY(hor, charts[i], size/resolution);
-      int x = xy.first, y = xy.second;
-      if (x==-1 and y==-1) {
-        ok = false;
-        break;
-      }
-      updateHorizon(hor, charts[i], x, y);
-      dx.emplace_back(x);
-      dy.emplace_back(y);
-    }
-
-    if(ok) break;
-    else continue;
+  double l = sqrt(totalArea(Us, Ts));
+  double r = 10*l;
+  while(fabs(l-r)/l > 1e-2) {
+    double m = (r+l)/2;
+    cout << m << endl;
+    fr = canFit(m, resolution, charts, id);
+    if(fr.ok) r = m;
+    else l = m;
   }
 
   for (int i = 0; i < id.size(); i++) {
-    translateU(*Us[id[i]], dx[i], dy[i], resolution);
+    translateU(*Us[id[i]], fr.dx[i], fr.dy[i], resolution);
   }
 
   auto finish = chrono::high_resolution_clock::now();
   cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+}
+
+FitResult canFit(double size, double resolution, vector<Chart> &charts, vector<int> &id) {
+  bool ok = true;
+  vector<int> hor(size / resolution);
+  vector<int> dx, dy;
+
+  for (int i : id) {
+    pair<int, int> xy = calculateBestXY(hor, charts[i], size / resolution);
+    int x = xy.first, y = xy.second;
+    if (x == -1 and y == -1) {
+      ok = false;
+      break;
+    }
+    updateHorizon(hor, charts[i], x, y);
+    dx.emplace_back(x);
+    dy.emplace_back(y);
+  }
+
+  return {dx,dy,ok};
 }
 
 int calculateDY(vector<int> &hor, vector<int> &lh, int x) {
