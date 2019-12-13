@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   MatrixXi F;
 
   if (argc < 2) {
-    igl::readOFF("../src/data/hexagon.off", V, F);
+    igl::readOFF("../src/data/quad.off", V, F);
     //igl::readPLY("../src/data/bunny.ply", V, F);
 //		igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
   } else {
@@ -34,14 +34,13 @@ int main(int argc, char *argv[]) {
 //	HalfedgeBuilder *builder = new HalfedgeBuilder();
 //	HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
 //	Segmentation *segmentation = new Segmentation(V, F, he, viewer);
-  vector<const MatrixXd*> Vs = {&V};
-  vector<const MatrixXi*> Fs = {&F};
+  vector<const MatrixXd*> Vs = {&V, &V, &V, &V, &V, &V, &V, &V, &V};
+  vector<const MatrixXi*> Fs = {&F, &F, &F, &F, &F, &F, &F, &F, &F};
   vector<MatrixXd> Us = parametrize(Vs, Fs);
-  cout << Us[0] << endl;
 
-  viewer.data().set_mesh(*Vs[0], *Fs[0]);
-  viewer.data().set_uv(Us[0]);
-  viewer.data().show_texture = true;
+//  viewer.data().set_mesh(*Vs[0], *Fs[0]);
+//  viewer.data().set_uv(Us[0]);
+//  viewer.data().show_texture = true;
 
   typedef Matrix<unsigned char, -1, -1> MatrixXc;
   MatrixXc R, G, B;
@@ -62,14 +61,22 @@ int main(int argc, char *argv[]) {
   viewer.data().set_colors(RowVector3d(1,1,1));
   viewer.core().lighting_factor = 0;
 
-//  MatrixX3d new_V = MatrixXd::Ones(V.rows(), 3);
-//  rescale(V, U, F);
-//  alignVertical(U);
-//  alignBottomLeft(U);
-//  new_V.col(0) = U.col(0);
-//  new_V.col(1) = U.col(1);
-//  viewer.data().set_mesh(new_V, F);
-//  cout << U << endl;
+
+  vector<MatrixXd*> pUs;
+  pUs.reserve(Us.size());
+  for(auto & U : Us) pUs.emplace_back(&U);
+
+  pack(Vs, pUs, Fs);
+
+  for(int i = 0; i < Us.size(); i++) {
+    auto & U = Us[i];
+    auto & T = *Fs[i];
+    viewer.append_mesh();
+    MatrixXd new_U = MatrixXd::Zero(U.rows(), 3);
+    new_U.col(0) = U.col(0);
+    new_U.col(1) = U.col(1);
+    viewer.data().set_mesh(new_U,T);
+  }
 
   viewer.core(0).align_camera_center(V, F);
   viewer.launch(); // run the viewer

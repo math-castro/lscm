@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cfloat>
 #include <map>
+#include <algorithm>
 
 using namespace Eigen;
 using namespace std;
@@ -103,4 +104,113 @@ pair<vector<int>, vector<int>> horizon(const MatrixXd &U, double resolution) {
   }
 
   return pair<vector<int>, vector<int>>(lh, uh);
+}
+
+void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixXi*> Ts) {
+  vector<double> d;
+  vector<int> id;
+  vector<vector<int>> lh, uh;
+  d.reserve(Xs.size());
+  id.reserve(Xs.size());
+  lh.reserve(Xs.size());
+  uh.reserve(Xs.size());
+
+  for(int i = 0; i < Us.size(); i++) {
+    const MatrixXd &X = *Xs[i];
+    MatrixXd &U = *Us[i];
+    const MatrixXi &T = *Ts[i];
+
+    rescale(X,U,T);
+    alignVertical(U);
+    alignBottomLeft(U);
+  }
+
+  double resolution = 0;
+
+  for(auto pU : Us) {
+    auto &U = *pU;
+    resolution = max(resolution, U.maxCoeff()/100);
+  }
+
+  for(int i = 0; i < Us.size(); i++) {
+    const MatrixXd &X = *Xs[i];
+    MatrixXd &U = *Us[i];
+    const MatrixXi &T = *Ts[i];
+
+    auto ph = horizon(U, resolution);
+    lh.emplace_back(ph.first);
+    ph.first.clear();
+    uh.emplace_back(ph.second);
+    ph.second.clear();
+
+    auto diam = findDiameter(U);
+    d.emplace_back((U.row(diam.first) - U.row(diam.second)).norm());
+    id.emplace_back(i);
+  }
+
+  auto comp = [&](int a, int b) {return d[a] > d[b];};
+  sort(id.begin(), id.end(), comp);
+
+  vector<int> hor = {0};
+  for(int i : id) {
+    pair<int,int> xy = calculateBestXY(hor, lh[i]);
+    int x = xy.first, y = xy.second;
+    updateHorizon(hor, uh[i], x, y);
+    translateU(*Us[i], x, y, resolution);
+  }
+}
+
+int calculateDY(vector<int> &hor, vector<int> &lh, int x) {
+  int dy = 0;
+  for(int i = 0; i < lh.size(); i++) {
+    if(x+i < hor.size())
+      dy = max(dy, hor[x+i]-lh[i]+1);
+    else
+      dy = max(dy, 0);
+  }
+  return dy;
+}
+
+int calculateAreaUnder(vector<int> &hor, vector<int> &lh, int x, int y) {
+  int a = 0;
+  for(int i = 0; i < lh.size(); i++) {
+    if(x+i < hor.size())
+      a += lh[i]+y-hor[x+i];
+    else
+      a += lh[i]+y;
+  }
+  return a;
+}
+
+pair<int,int> calculateBestXY(vector<int> &hor, vector<int> &lh) {
+  int min_area = 0x3f3f3f3f;
+  int best_x = 0;
+  int best_y = 0;
+  for(int i = 0; i <= hor.size(); i++) {
+    int dy = calculateDY(hor, lh, i);
+    int a = calculateAreaUnder(hor, lh, i, dy);
+    if(a < min_area) {
+      min_area = a;
+      best_x = i;
+      best_y = dy;
+    }
+  }
+  return {best_x, best_y};
+}
+
+void updateHorizon(vector<int> &hor, vector<int> &uh, int x, int y) {
+  for(int i = 0; i < uh.size(); i++) {
+    if(x+i < hor.size())
+      hor[x+i] = uh[i]+y;
+    else
+      hor.push_back(uh[i]+y);
+  }
+}
+
+void translateU(MatrixXd &U, int x, int y, double resolution) {
+  double dx = resolution*x, dy = resolution*y;
+  for(int i = 0; i < U.rows(); i++) {
+    U(i,0) += dx;
+    U(i,1) += dy;
+  }
 }
