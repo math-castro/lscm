@@ -7,6 +7,7 @@
 #include "halfedge/HalfedgeBuilder.cpp"
 #include "Segmentation.cpp"
 #include "parametrization/parametrization.hpp"
+#include "packing/packing.hpp"
 
 using namespace Eigen; // to use the classes provided by Eigen library
 using namespace std;
@@ -28,19 +29,20 @@ int main(int argc, char *argv[]) {
 	igl::opengl::glfw::Viewer viewer; // create the 3d viewer
 
 	viewer.data().set_mesh(V, F);
-	viewer.append_mesh();
+	viewer.append_mesh(true);
 
 //	HalfedgeBuilder *builder = new HalfedgeBuilder();
 //	HalfedgeDS he = (builder->createMeshWithFaces(V.rows(), F)); // create the half-edge representation
 //	Segmentation *segmentation = new Segmentation(V, F, he, viewer);
-	MatrixX2d U = parametrize(V, F);
+	MatrixXd U = parametrize(V, F);
 	MatrixX3d new_V = MatrixXd::Ones(V.rows(), 3);
-	new_V.col(0) = U.col(0);
+    rescale(V, U, F);
+    alignVertical(U);
+    new_V.col(0) = U.col(0);
     new_V.col(1) = U.col(1);
     viewer.data().set_mesh(new_V, F);
-	cout << U << endl;
+    cout << U << endl;
 
 	viewer.core(0).align_camera_center(V, F);
 	viewer.launch(); // run the viewer
-
 }
