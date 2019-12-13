@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   MatrixXi F;
 
   if (argc < 2) {
-    igl::readOFF("../src/data/quad.off", V, F);
+    igl::readOFF("../src/data/hexagon.off", V, F);
     //igl::readPLY("../src/data/bunny.ply", V, F);
 //		igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
   } else {
@@ -42,6 +42,25 @@ int main(int argc, char *argv[]) {
   viewer.data().set_mesh(*Vs[0], *Fs[0]);
   viewer.data().set_uv(Us[0]);
   viewer.data().show_texture = true;
+
+  typedef Matrix<unsigned char, -1, -1> MatrixXc;
+  MatrixXc R, G, B;
+  const int n = 100;
+  R = 255*MatrixXc::Ones(n,n);
+  G = 255*MatrixXc::Ones(n,n);
+  B = 255*MatrixXc::Ones(n,n);
+
+  for(int i = 0; i < n; i+=10)
+    for(int j = 0; j < n; j++)
+      G(i,j) = B(i, j) = 0;
+  for(int i = 0; i < n; i++)
+    for(int j = 0; j < n; j+=10)
+      G(i,j) = R(i, j) = 0;
+
+
+  viewer.data().set_texture(R,G,B);
+  viewer.data().set_colors(RowVector3d(1,1,1));
+  viewer.core().lighting_factor = 0;
 
 //  MatrixX3d new_V = MatrixXd::Ones(V.rows(), 3);
 //  rescale(V, U, F);
