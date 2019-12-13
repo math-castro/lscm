@@ -17,9 +17,14 @@ public:
 	 * Initialize the data structures
 	 **/
 	Segmentation(MatrixXd &V_original, MatrixXi &F_original, HalfedgeDS &mesh, igl::opengl::glfw::Viewer &viewer_) {
+		debug = 0;
 		viewer = &viewer_;
 		//threshold = 0.7; // low poly bunny;
-		threshold = 0.838; // for the high resolution bunny, allows 5% of the edges.
+		//threshold = 0.838; // for the high resolution bunny, allows 5% of the edges.
+		threshold = 0.4;
+
+		sharpEdges = vector<int>();
+		tag = new int[2*nEdges](); // tag[i] = 0 (nothing), 1 (feature), 2 (feature neighbor)
 		he = &mesh;
 		V = &V_original;
 		F = &F_original;
@@ -30,13 +35,18 @@ public:
 		//cout << *EdgeSharpness << endl;
 		//cout << nEdges << endl;
 		colorSharpEdges();
+		//expandFeatureCurve(208575);
+		for (int i=0; i<sharpEdges.size(); i++) {
+			expandFeatureCurve(sharpEdges[i]);
+		}
+		colorFeatures();
 	}
 
 	void colorSharpEdges() {
 		//viewer.append_mesh();
-		cout << "show_lines " << viewer->data().show_lines << endl;
+		if (debug) cout << "show_lines " << viewer->data().show_lines << endl;
 		viewer->data().show_lines = false;
-		cout << "show_lines " << viewer->data().show_lines << endl;
+		if (debug) cout << "show_lines " << viewer->data().show_lines << endl;
 
 		/*cout << "point_size " << viewer->data().point_size << endl;
 		viewer->data().point_size = 60.0f;
@@ -52,50 +62,44 @@ public:
 			if ((*EdgeSharpness)(EdgeMap[e]) < threshold) {
 				continue;
 			}
+			sharpEdges.push_back(e);
+			//cout << "e: " << e << endl;
 
 			e1.row(i) << V->row(he->getTarget(e));
 			e2.row(i) << V->row(he->getTarget(he->getOpposite(e)));
 			i++;
 		}
 		//cout << "linewidth " << viewer->data().line_width << endl;
+		/*viewer->data().add_edges(
+			e1,
+			e2,
+			Eigen::RowVector3d(1, 0, 0));
+			*/
+	}
+
+	void colorFeatures() {
+		MatrixXd e1(2*nEdges, 3);
+		MatrixXd e2(2*nEdges, 3);
+		int i = 0;
+		for (int e=0; e<2*nEdges; e++) {
+			if (tag[e] != 1) {
+				continue;
+			}
+			//cout << "e: " << e << endl;
+
+			e1.row(i) << V->row(he->getTarget(e));
+			e2.row(i) << V->row(he->getTarget(he->getOpposite(e)));
+			i++;
+		}
+		//cout << "linewidth " << viewer->data().line_width << endl;
+		//cout << "e1: " << e1 << endl;
+		//for (int i=0; i<2*nEdges; i++) {
+		//	cout << tag[i] << " ";
+		//}
 		viewer->data().add_edges(
 			e1,
 			e2,
 			Eigen::RowVector3d(1, 0, 0));
-
-		/*MatrixX3d Vc;
-		Vc << -1, -1, -1,
-			  -1, -1,  1,
-			  -1,  1, -1,
-	  		  -1,  1,  1,
-			   1, -1, -1,
-	  		   1, -1,  1,
-	  		   1,  1, -1,
-	  	  	   1,  1,  1;
-		MatrixXi Fc;
-		Fc << 0, 1, 2,
-			  1, 3, 2,
-			  4, 0, 6,
-			  0, 2, 6,
-			  5, 4, 7,
-			  4, 6, 7,
-			  1, 5, 3,
-			  5, 7, 3,
-			  2, 3, 6,
-			  3, 7, 6,
-			  4, 5, 0,
-			  5, 1, 0;
-		viewer->data().*/
-
-		/*cout << viewer->data(0).line_width << endl;
-		viewer->data(1).line_width = 1000.0f;
-		cout << viewer->data(1).line_width << endl;
-		cout << viewer->data(10).line_width << endl;
-		cout << viewer->data(10000000).line_width << endl;
-		*/
-		//cout << "linewidth " << viewer->data().line_width << endl;
-		//viewer->data().line_width = 300.0f;
-		//cout << "linewidth " << viewer->data().line_width << endl;
 	}
 
 	Vector3d getNormal(int f) {
@@ -167,7 +171,7 @@ public:
 		return neighbours;
 	}
 
-	pair<float, vector<int>> DFS(int current, vector<int> &S, float sharpness, int* tag, int length, int maxStringLength) {
+	pair<float, vector<int>> DFS(int current, vector<int> &S, float sharpness, int length, int maxStringLength) {
 		if (length == maxStringLength) {
 			return pair<float, vector<int>>(sharpness, S);
 		}
@@ -180,7 +184,7 @@ public:
 				continue;
 			}
 			S.push_back(next);
-			pair<float, vector<int>> result = DFS(next, S, sharpness + (*EdgeSharpness)(EdgeMap[next]), tag, length+1, maxStringLength);
+			pair<float, vector<int>> result = DFS(next, S, sharpness + (*EdgeSharpness)(EdgeMap[next]), length+1, maxStringLength);
 			S.pop_back();
 			if (result.first > bestSharpness) {
 				bestSharpness = result.first;
@@ -190,7 +194,7 @@ public:
 		return pair<float, vector<int>>(bestSharpness, bestS);
 	}
 
-	void tagNeighbours(int v, int* tag) {
+	void tagNeighbours(int v) {
 		vector<int> neighbours = getInNeighbours(v);
 		for (int j=0; j<neighbours.size(); j++) {
 			if (tag[neighbours[j]] == 0) {
@@ -206,44 +210,89 @@ public:
 	}
 
 	void expandFeatureCurve(int startEdge) {
-		int* tag = new int[2*nEdges](); // tag[i] = 0 (nothing), 1 (feature), 2 (feature neighbor)
-		vector<int> detectedFeature;
+		if (debug) cout << "called with startEdge: " << startEdge << endl;
+		vector<int> detectedFeature(0);
 		int maxStringLength = 5;
 		int minFeatureLength = 15;
 		int edges[] = {startEdge, he->getOpposite(startEdge)};
 		for (const int &edge : edges) {
     		int current = edge;
 			float sharpness = 0;
-			vector<int> S;
 			do {
+				vector<int> S(0);
 				S.push_back(current);
-				sharpness += getEdgeSharpness(EdgeMap[current]);
-				pair<float, vector<int>> result = DFS(current, S, sharpness, tag, 1, maxStringLength);
+				pair<float, vector<int>> result = DFS(current, S, (*EdgeSharpness)(EdgeMap[current]), 1, maxStringLength);
 				S = result.second;
-				current = S[1];
-				detectedFeature.push_back(current);
+				sharpness = result.first;
 
+				if (debug) {
+					cout << "S: " << endl;
+					print(S);
+					cout << "detectedFeature: " << endl;
+					print(detectedFeature);
+				}
+				//cout << "S is " << S << endl;
+
+				if (S.size() < 2) {
+					break;
+				}
+
+				current = S[1];
+				if (find(detectedFeature.begin(), detectedFeature.end(), current) != detectedFeature.end()) {
+					break;
+				}
+				detectedFeature.push_back(current);
+				if (debug) {
+					cout << "sharpness: " << sharpness << endl;
+					cout << "maxStringLength * threshold: " << maxStringLength * threshold << endl;
+					cout << "edge: " << edge << endl;
+				}
 			} while (sharpness > maxStringLength * threshold);
 		}
+		//cout << detectedFeature.size() << " < 15 " << endl;
 		if (detectedFeature.size() > minFeatureLength) {
+			if (debug) {
+				cout << "activé " << endl;
 			// tag elements of detectedFeature as feature
+				cout << "detectedFeature: " << endl;
+				print(detectedFeature);
+			}
+
 			for (int i=0; i<detectedFeature.size(); i++) {
+				if (debug) {
+					cout << "i: " << i << endl;
+					cout << "detectedFeature[i]: " << detectedFeature[i] << endl;
+				}
 				tag[detectedFeature[i]] = 1;
 			}
+			if (debug) cout << "yo " << endl;
 			// tag neighbours of detectedFeature as feature neighbor
 			int start = he->getTarget(he->getOpposite(detectedFeature[0]));
-			tagNeighbours(start, tag);
+			tagNeighbours(start);
 			for (int i=0; i<detectedFeature.size(); i++) {
 				int current = he->getTarget(detectedFeature[i]);
-				tagNeighbours(current, tag);
+				if (debug) cout << "hey" << endl;
+				tagNeighbours(current);
 			}
 		}
 	}
 
+	void print(vector<int> v) {
+		std::ostringstream oss;
+		if (!v.empty()) {
+			std::copy(v.begin(), v.end()-1, std::ostream_iterator<int>(oss, ","));
+			oss << v.back();
+			std::cout << oss.str() << std::endl;
+		}
+	}
+
 private:
+	int debug;
 	igl::opengl::glfw::Viewer *viewer;
 	float threshold;
 	int* EdgeMap;
+	vector<int> sharpEdges;
+	int* tag;
 	/** Half-edge representation of the original input mesh */
 	HalfedgeDS *he;
 	MatrixXd *V; // vertex coordinates of the original input mesh
