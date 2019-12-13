@@ -5,7 +5,7 @@
 #include <igl/readOBJ.h>
 
 #include "halfedge/HalfedgeBuilder.cpp"
-#include "Segmentation.cpp"
+#include "segmentation/segmentation.cpp"
 #include "parametrization/parametrization.hpp"
 #include "packing/packing.hpp"
 
