@@ -56,26 +56,35 @@ void alignVertical(Eigen::MatrixXd &U) {
     U.row(i) = (R*(U.row(i).transpose())).transpose();
 }
 
-pair<vector<double>, vector<double>> horizon(const MatrixXd &U, double resolution) {
-  double min_u = DBL_MAX, max_u = -DBL_MAX;
-  map<int, double> upper_horizon, lower_horizon;
+void alignBottomLeft(Eigen::MatrixXd &U) {
+  double min_u = DBL_MAX, min_v = DBL_MAX;
   for(int i = 0; i < U.rows(); i++) {
     min_u = min(min_u, U(i, 0));
+    min_v = min(min_v, U(i, 1));
   }
   for(int i = 0; i < U.rows(); i++) {
-    int x = lround((U(i,0)-min_u)/resolution);
+    U(i,0) -= min_u;
+    U(i,1) -= min_v;
+  }
+}
+
+pair<vector<int>, vector<int>> horizon(const MatrixXd &U, double resolution) {
+  map<int, int> upper_horizon, lower_horizon;
+  for(int i = 0; i < U.rows(); i++) {
+    int x = (int)lround(U(i,0)/resolution);
+    int y = (int)lround(U(i,1)/resolution);
     if(lower_horizon.count(x)) {
-      lower_horizon[x] = min(lower_horizon[x], U(i,1));
-      upper_horizon[x] = max(upper_horizon[x], U(i,1));
+      lower_horizon[x] = min(lower_horizon[x], y);
+      upper_horizon[x] = max(upper_horizon[x], y);
     }
     else {
-      lower_horizon[x] = U(i,1);
-      upper_horizon[x] = U(i,1);
+      lower_horizon[x] = y;
+      upper_horizon[x] = y;
     }
   }
   int max_x = lower_horizon.rbegin()->first;
 
-  vector<double> lh(max_x+1),uh(max_x+1);
+  vector<int> lh(max_x+1),uh(max_x+1);
 
   for(int i = 0; i <= max_x; i++) {
     if(lower_horizon.count(i)) {
@@ -93,5 +102,5 @@ pair<vector<double>, vector<double>> horizon(const MatrixXd &U, double resolutio
     }
   }
 
-  return pair<vector<double>, vector<double>>(lh, uh);
+  return pair<vector<int>, vector<int>>(lh, uh);
 }

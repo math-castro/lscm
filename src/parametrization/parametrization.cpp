@@ -8,7 +8,15 @@ using namespace std;
 
 typedef Triplet<double> Td;
 
-MatrixX2d parametrize(const MatrixXd &V, const MatrixXi &T) {
+vector<MatrixXd> parametrize(vector<const MatrixXd*> &Vs, vector<const MatrixXi*> &Ts) {
+  vector<MatrixXd> Us;
+  Us.reserve(Vs.size());
+  for(int i = 0; i < Vs.size(); i++)
+    Us.emplace_back(parametrize(*Vs[i], *Ts[i]));
+  return Us;
+}
+
+MatrixXd parametrize(const MatrixXd &V, const MatrixXi &T) {
   const int np = T.rows(), n = V.rows();
 
   pair<int,int> diam = approximateDiameter(V);
@@ -75,7 +83,7 @@ MatrixX2d parametrize(const MatrixXd &V, const MatrixXi &T) {
   VectorXd uf = solver.solve(b);
 
   // Join uf and up
-  MatrixX2d U(n, 2);
+  MatrixXd U(n, 2);
   for(int i = 0; i < n; i++) {
     if(i != diam.first and i != diam.second) {
       int ii = i;

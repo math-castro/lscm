@@ -1,4 +1,5 @@
-#include <igl/opengl/glfw/Viewer.h>
+#include "segmentation/segmentation.hpp"
+
 #include <math.h>
 
 #ifndef HALFEDGE_DS_HEADER
