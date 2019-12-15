@@ -120,8 +120,9 @@ public:
     cout << "done" << endl;
     cout << "\tn=" << nV << ", e=" << (nE / 2) << ", f=" << nF;
     cout << ", \tboundary edges=" << nB << ", inner edges=" << innerEdges << endl;
+    cout.clear();
 
-    HalfedgeDS result(nV, nE); // the resulting triangle mesh
+    HalfedgeDS result(nV, nE, nF); // the resulting triangle mesh
 
     int i;
     int edgeCounter = 0;
@@ -138,6 +139,8 @@ public:
 
         // setting the face contaning the hal-edge
         result.setFace(edgeCounter, i);
+        // if (j == 0) // set the first halfedge incident to the face
+        //   result.setEdgeInFace(i, edgeCounter);
         edgeCounter++;
       }
     }
@@ -261,6 +264,7 @@ public:
     cout << "done" << endl;
     cout << "\tn=" << nV << ", e=" << (nE / 2) << ", f=" << nF;
     cout << ", \tboundary edges=" << nB << ", inner edges=" << innerEdges << endl;
+    cout.clear();
 
     HalfedgeDS result(nV, nE, nF); // the resulting triangle mesh
 

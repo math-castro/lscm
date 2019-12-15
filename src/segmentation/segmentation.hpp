@@ -15,12 +15,14 @@ class Segmentation {
  public:
 
   Segmentation(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, igl::opengl::glfw::Viewer &viewer);
-  void expandFeatureCurves();
-  void colorInitialFeatures();
-  void colorExpandedFeatures();
+  std::map<int, std::vector<int>> run();
 
  private:
 
+  void expandCharts();
+  void expandFeatureCurves();
+  void colorInitialFeatures();
+  void colorExpandedFeatures();
   void findInitialFeatures();
   void expandFeatureCurve(int start);
   double sharpness(int h);
@@ -33,6 +35,15 @@ class Segmentation {
   void tagNeighborhoods(std::queue<std::pair<int,int>> &q, int depth);
   void tagAsNeighbor(int h);
   void colorEdge(int h);
+  void distanceToFeatures();
+  std::vector<int> maximalFacets();
+  void init_unionfind();
+  int find(int u);
+  void join(int u, int v);
+  void removeNonExtremalEdges(int e);
+  void buildIncidentEdges();
+  int countCharts();
+  std::map<int, std::vector<int>> getCharts();
 
   HalfedgeDS heds;
   const Eigen::MatrixXd &V;
@@ -43,4 +54,9 @@ class Segmentation {
   const int min_feature_length = 15;
   double threshold;
   std::set<std::pair<double,int>> top_features;
+  std::vector<int> distanceF;
+  std::vector<int> distanceC;
+  std::vector<int> incidentEdge;
+  std::vector<int> par, size;
+  int eps = 0;
 };

@@ -51,12 +51,12 @@ public:
 		nVertices = n;
 		nHalfedges = h;
 		nFaces = f;
-		T = new int[nHalfedges * sizeT];
+		T = (int*)malloc(nHalfedges * sizeT*sizeof(int));
 		for (int i = 0; i < nHalfedges * sizeT; i++)
 			T[i] = -1; // "-1" means that reference is NOT DEFINED (null)
 
-		incidentEdge = new int[nVertices];
-		faces=new int[nFaces];
+		incidentEdge = (int*)malloc(nVertices*sizeof(int));
+		faces = (int*)malloc(nFaces*sizeof(int));
 	}
 
 	/** 
@@ -206,19 +206,19 @@ public:
 		}
 
 		cout << "face list: " << nFaces << endl;
-		if(faces!=NULL) {
-		for (int i = 0; i < nFaces; i++)
-		{
-			cout << "f" << i << ": \t";
-			int e1=getEdgeInFace(i);
-			cout << "incident edge: e" << e1;
-			int e2=getNext(e1);
-			int e3=getNext(e2);
-			cout << "\t v" << getTarget(e3) << ", v" << getTarget(e1) << ", v" << getTarget(e2);
-			cout << endl;
-		}
+		// if(faces!=NULL) {
+		// for (int i = 0; i < nFaces; i++)
+		// {
+		// 	cout << "f" << i << ": \t";
+		// 	int e1=getEdgeInFace(i);
+		// 	cout << "incident edge: e" << e1;
+		// 	int e2=getNext(e1);
+		// 	int e3=getNext(e2);
+		// 	cout << "\t v" << getTarget(e3) << ", v" << getTarget(e1) << ", v" << getTarget(e2);
+		// 	cout << endl;
+		// }
 
-		}
+		// }
 	}
 
 private:

@@ -36,18 +36,18 @@ int main(int argc, char *argv[]) {
   viewer.data().show_lines = true;
   // viewer.data().line_width = 10;
 
-  HalfedgeBuilder hb;
+  // HalfedgeBuilder hb;
   // hb.createMeshWithFaces(V.rows(),F);
 
   // return 0;
   Segmentation segmentation(V, F, viewer);
-  segmentation.expandFeatureCurves();
-  segmentation.colorExpandedFeatures();
+  auto m = segmentation.run();
 
   // vector<MatrixXd> Vs;
   // vector<MatrixXi> Fs;
   // Vs.reserve(F.rows());
   // Fs.reserve(F.rows());
+
 
   // for (int i = 0; i < F.rows(); i++) {
   //   Vs.emplace_back(MatrixXd::Zero(3, 3));
@@ -58,6 +58,8 @@ int main(int argc, char *argv[]) {
   //   Fs.back()(0,1) = 1;
   //   Fs.back()(0,2) = 2; 
   // }
+  // Vs.push_back(V);
+  // Fs.push_back(F);
 
   // vector<const MatrixXd *> pVs;
   // vector<const MatrixXi *> pFs;
@@ -71,13 +73,13 @@ int main(int argc, char *argv[]) {
   // vector<MatrixXd *> pUs;
   // for (auto &U : Us) pUs.emplace_back(&U);
 
-  // //  viewer.data().set_mesh(*Vs[0], *Fs[0]);
-  // //  viewer.data().set_uv(Us[0]);
-  // //  viewer.data().show_texture = true;
+  // viewer.data().set_mesh(Vs[0], Fs[0]);
+  // viewer.data().set_uv(Us[0]);
+  // viewer.data().show_texture = true;
 
   // typedef Matrix<unsigned char, -1, -1> MatrixXc;
   // MatrixXc R, G, B;
-  // const int n = 10;
+  // const int n = 100;
   // R = 255 * MatrixXc::Ones(n, n);
   // G = 255 * MatrixXc::Ones(n, n);
   // B = 255 * MatrixXc::Ones(n, n);
@@ -87,9 +89,9 @@ int main(int argc, char *argv[]) {
   // for (int i = 0; i < n; i++)
   //   for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
 
-  // //  viewer.data().set_texture(R,G,B);
-  // //  viewer.data().set_colors(RowVector3d(1,1,1));
-  // // viewer.core().lighting_factor = 0;
+  // viewer.data().set_texture(R,G,B);
+  // viewer.data().set_colors(RowVector3d(1,1,1));
+  // viewer.core().lighting_factor = 0;
 
   // pUs.reserve(Us.size());
 
