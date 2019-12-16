@@ -61,6 +61,7 @@ void Segmentation::expandCharts() {
     pq.pop();
     int f = heds.getFace(e);
     int of = heds.getFace(heds.getOpposite(e));
+    if(f == -1 or of == -1) continue;
     if (find(of) == -1) {
       join(f, of);
       chart_boundaries.erase(e);
@@ -132,7 +133,7 @@ vector<int> Segmentation::maximalFacets() {
     bool ok = true;
     do {
       int of = heds.getFace(heds.getOpposite(ne));
-      ok &= (distanceF[f] > distanceF[of]);
+      ok &= (distanceF[f] >= distanceF[of]);
       ne = heds.getNext(ne);
     } while (ne != e);
     if (ok) r.emplace_back(f);
