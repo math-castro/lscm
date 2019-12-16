@@ -73,18 +73,18 @@ void alignBottomLeft(Eigen::MatrixXd &U) {
 Chart horizon(const MatrixXd &U, double resolution) {
   map<int, int> upper_horizon, lower_horizon;
   int max_y = 0;
-  const int margin = 10;
+  const int margin = 200;
 
   for(int i = 0; i < U.rows(); i++) {
     int x = (int)lround(U(i,0)/resolution);
     int y = (int)lround(U(i,1)/resolution);
     max_y = max(max_y, y);
     if(lower_horizon.count(x)) {
-      lower_horizon[x] = min(lower_horizon[x], y);
+      lower_horizon[x] = min(lower_horizon[x], y-margin);
       upper_horizon[x] = max(upper_horizon[x], y+margin);
     }
     else {
-      lower_horizon[x] = y;
+      lower_horizon[x] = y-margin;
       upper_horizon[x] = y+margin;
     }
   }
