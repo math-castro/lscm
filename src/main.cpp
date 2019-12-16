@@ -14,6 +14,8 @@ using namespace std;
 
 // ------------ main program ----------------
 int main(int argc, char *argv[]) {
+  int mode = atoi(argv[argc-1]);
+
   MatrixXd V;
   MatrixXi F;
 
@@ -23,27 +25,18 @@ int main(int argc, char *argv[]) {
     igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
   } else {
     std::cout << "reading input file: " << argv[1] << std::endl;
-    igl::readOFF(argv[1], V, F);
+    igl::readOBJ(argv[1], V, F);
   }
 
   igl::opengl::glfw::Viewer viewer;  // create the 3d viewer
 
-  // viewer.data().set_mesh(V, F);
-  // viewer.data().show_lines = false;
-  // viewer.data().set_colors(RowVector3d(1,1,1));
+  // SEGMENTATION 
 
-  // viewer.append_mesh(true);
-  // viewer.data().show_lines = true;
-  // viewer.data().line_width = 10;
-
-  // HalfedgeBuilder hb;
-  // hb.createMeshWithFaces(V.rows(),F);
-
-  // return 0;
   Segmentation segmentation(V, F, viewer);
-  auto m = segmentation.run();
+  auto m = segmentation.run(mode);
+  cout << "Number of charts: " << m.size() << endl;
 
-  cout << m.size() << endl;
+  // BUILD CHARTS
 
   vector<MatrixXd> Vs;
   vector<MatrixXi> Fs;
@@ -76,18 +69,35 @@ int main(int argc, char *argv[]) {
     v.clear();
   }
 
+  // SHOW CHARTS
+
+  if(mode == 2) {
+    for(int i = 0; i < Vs.size(); i++) {
+      viewer.append_mesh(true);
+      viewer.data().set_mesh(Vs[i], Fs[i]);
+      auto color = RowVector3d::Random();
+      viewer.data().set_colors(color);
+    }
+    viewer.launch();
+    exit(EXIT_SUCCESS);
+  }
+
+  // PARAMETRIZATION
+
   vector<const MatrixXd *> pVs;
   vector<const MatrixXi *> pFs;
   pVs.reserve(Vs.size());
   pFs.reserve(Fs.size());
-
   for (auto &V : Vs) pVs.emplace_back(&V);
   for (auto &F : Fs) pFs.emplace_back(&F);
 
   vector<MatrixXd> Us = parametrize(pVs, pFs);
+
   vector<MatrixXd *> pUs;
+  pUs.reserve(Us.size());
   for (auto &U : Us) pUs.emplace_back(&U);
 
+  // BUILD ISO U,V LINES 
 
   typedef Matrix<unsigned char, -1, -1> MatrixXc;
   MatrixXc R, G, B;
@@ -101,21 +111,23 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < n; i++)
     for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
 
-  viewer.core().lighting_factor = 0;
-
   
-  for(int i = 0; i < Vs.size(); i++) {
-    viewer.append_mesh(true);
-    viewer.data().set_mesh(Vs[i], Fs[i]);
-    // auto color = RowVector3d::Random();
-    // viewer.data().set_colors(color);
-    viewer.data().set_colors(RowVector3d(1,1,1));
-    viewer.data().set_texture(R,G,B);
-    viewer.data().set_uv(Us[i]);
-    viewer.data().show_texture = true;
+  // SHOW ISO CURVES
+  if(mode == 3) {
+    for(int i = 0; i < Vs.size(); i++) {
+      viewer.append_mesh(true);
+      viewer.data().set_mesh(Vs[i], Fs[i]);
+      viewer.data().set_colors(RowVector3d(1,1,1));
+      viewer.data().set_texture(R,G,B);
+      viewer.data().set_uv(Us[i]);
+      viewer.data().show_texture = true;
+      viewer.data().show_lines = false;
+    }
+    viewer.launch();
+    exit(EXIT_SUCCESS);
   }
 
-  pUs.reserve(Us.size());
+  // PACKING
 
   pack(pVs, pUs, pFs);
 
@@ -130,13 +142,9 @@ int main(int argc, char *argv[]) {
     new_U.col(1) = U.col(1);
 
     viewer.data().set_mesh(new_U,T);
-    // viewer.data().set_texture(R,G,B);
-    // viewer.data().show_texture = true;
     viewer.data().set_colors(RowVector3d(1,1,1));
-
-    // cout << new_U << endl;
   }
 
   // viewer.core(0).align_camera_center(V, F);
-  viewer.launch();  // run the viewer
+  viewer.launch();
 }

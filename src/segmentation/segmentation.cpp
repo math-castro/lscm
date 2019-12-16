@@ -14,24 +14,56 @@ Segmentation::Segmentation(const MatrixXd &V, const MatrixXi &F,
   heds = hb.createMeshWithFaces(V.rows(), F);
 }
 
-map<int,vector<int>> Segmentation::run() {
-  cerr << "Build incident egges" << endl;
-  // buildIncidentEdges();
-  cerr << "Find initial features" << endl;
+map<int,vector<int>> Segmentation::run(int mode) {
+  auto superstart = chrono::high_resolution_clock::now();
+
+  cout << "Finding initial features..." << flush;
+  auto start = chrono::high_resolution_clock::now();
   findInitialFeatures();
   threshold = top_features.begin()->first;
-  // colorInitialFeatures();
-  cerr << "Expand feature curves" << endl;
+  auto finish = chrono::high_resolution_clock::now();
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+
+  if(mode == 0) {
+    viewer.data().set_mesh(V, F);
+    viewer.data().show_lines = false;
+    viewer.data().set_colors(RowVector3d(1,1,1));
+    colorInitialFeatures();
+    viewer.launch();  // run the viewer
+    exit(EXIT_SUCCESS);
+  }
+
+  cout << "Expanding feature curves..." << flush;
+  start = chrono::high_resolution_clock::now();
   expandFeatureCurves();
-  // cerr << "Color expanded feature curves" << endl;
-  colorExpandedFeatures();
-  cerr << "Calculate distance to features" << endl;
+  finish = chrono::high_resolution_clock::now();
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+
+  if(mode == 1) {
+    viewer.data().set_mesh(V, F);
+    viewer.data().show_lines = false;
+    viewer.data().set_colors(RowVector3d(1,1,1));
+    colorExpandedFeatures();
+    viewer.launch();  // run the viewer
+    exit(EXIT_SUCCESS);
+  }
+
+  start = chrono::high_resolution_clock::now();
+  cout << "Calculating distance to features..." << flush;
   distanceToFeatures();
-  cerr << "Expand charts" << endl;
+  finish = chrono::high_resolution_clock::now();
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+
+
+  start = chrono::high_resolution_clock::now();
+  cout << "Expanding charts..." << flush;
   expandCharts();
-  cerr << "Get charts" << endl;
+  finish = chrono::high_resolution_clock::now();
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+
+  auto superfinish = chrono::high_resolution_clock::now();
+  cout << "Total segmentation: " << chrono::duration<double>(superfinish-superstart).count() << " s" << endl;
   return getCharts();
-  // return map<int,vector<int>>();
 }
 
 void Segmentation::expandCharts() {

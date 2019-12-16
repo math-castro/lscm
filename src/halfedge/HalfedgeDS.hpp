@@ -55,7 +55,6 @@ public:
 		T = new int[nHalfedges * sizeT];
 		for (int i = 0; i < nHalfedges * sizeT; i++)
 			T[i] = -1; // "-1" means that reference is NOT DEFINED (null)
-		std::cout << (T[nHalfedges*sizeT-1]) << std::endl;
 
 		// incidentEdge = (int*)malloc(nVertices*sizeof(int));
 		// faces = (int*)malloc(nFaces*sizeof(int));

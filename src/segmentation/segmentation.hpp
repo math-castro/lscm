@@ -15,7 +15,7 @@ class Segmentation {
  public:
 
   Segmentation(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, igl::opengl::glfw::Viewer &viewer);
-  std::map<int, std::vector<int>> run();
+  std::map<int, std::vector<int>> run(int mode);
 
  private:
 

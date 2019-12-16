@@ -20,7 +20,7 @@ vector<MatrixXd> parametrize(vector<const MatrixXd*> &Vs, vector<const MatrixXi*
     Us.emplace_back(parametrize(*Vs[i], *Ts[i]));
 
   auto finish = chrono::high_resolution_clock::now();
-  cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
 
   return Us;
 }

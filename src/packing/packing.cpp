@@ -139,7 +139,7 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
 
   for(auto pU : Us) {
     auto &U = *pU;
-    resolution = min(resolution, U.maxCoeff()/100);
+    resolution = min(resolution, U.maxCoeff()/10);
   }
 
   for(int i = 0; i < Us.size(); i++) {
@@ -166,7 +166,6 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
   double r = 10*l;
   while(fabs(l-r)/l > 1e-2) {
     double m = (r+l)/2;
-    cout << m << endl;
     fr = canFit(m, resolution, charts, id);
     if(fr.ok) r = m;
     else l = m;
@@ -178,7 +177,7 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
   }
 
   auto finish = chrono::high_resolution_clock::now();
-  cout << " finished: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+  cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
 }
 
 FitResult canFit(double size, double resolution, vector<Chart> &charts, vector<int> &id) {
