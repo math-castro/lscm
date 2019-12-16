@@ -20,6 +20,7 @@ map<int,vector<int>> Segmentation::run() {
   cerr << "Find initial features" << endl;
   findInitialFeatures();
   threshold = top_features.begin()->first;
+  cout << threshold << endl;
   // colorInitialFeatures();
   cerr << "Expand feature curves" << endl;
   expandFeatureCurves();
