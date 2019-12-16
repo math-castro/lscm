@@ -29,7 +29,6 @@ class Segmentation {
   Eigen::Vector3d normal(int f);
   dfsResult dfs(int u, int depth, double sharp, int second, std::set<int> &detected_feature);
   std::vector<int> outNeighbors(int h);
-  std::vector<int> inNeighbors(int h);
   void tagFeatures(std::vector<int> &features);
   void tagAsFeature(int h);
   void tagNeighborhoods(std::queue<std::pair<int,int>> &q, int depth);
@@ -44,6 +43,7 @@ class Segmentation {
   void buildIncidentEdges();
   int countCharts();
   std::map<int, std::vector<int>> getCharts();
+  bool isFacetLocalMaximum(int f, int depth);
 
   HalfedgeDS heds;
   const Eigen::MatrixXd &V;

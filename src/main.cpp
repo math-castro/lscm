@@ -75,26 +75,6 @@ int main(int argc, char *argv[]) {
     Fs.push_back(Fp);
     v.clear();
   }
-  
-  for(int i = 0; i < Vs.size(); i++) {
-    viewer.append_mesh(true);
-    viewer.data().set_mesh(Vs[i], Fs[i]);
-    auto color = RowVector3d::Random();
-    viewer.data().set_colors(color);
-  }
-
-
-  // for (int i = 0; i < F.rows(); i++) {
-  //   Vs.emplace_back(MatrixXd::Zero(3, 3));
-  //   Vs.back().row(0) = V.row(F(i, 0));
-  //   Vs.back().row(1) = V.row(F(i, 1));
-  //   Vs.back().row(2) = V.row(F(i, 2));
-  //   Fs.emplace_back(MatrixXi::Zero(1,3));
-  //   Fs.back()(0,1) = 1;
-  //   Fs.back()(0,2) = 2; 
-  // }
-  // Vs.push_back(V);
-  // Fs.push_back(F);
 
   vector<const MatrixXd *> pVs;
   vector<const MatrixXi *> pFs;
@@ -108,25 +88,32 @@ int main(int argc, char *argv[]) {
   vector<MatrixXd *> pUs;
   for (auto &U : Us) pUs.emplace_back(&U);
 
-  // viewer.data().set_mesh(Vs[0], Fs[0]);
-  // viewer.data().set_uv(Us[0]);
-  // viewer.data().show_texture = true;
 
-  // typedef Matrix<unsigned char, -1, -1> MatrixXc;
-  // MatrixXc R, G, B;
-  // const int n = 100;
-  // R = 255 * MatrixXc::Ones(n, n);
-  // G = 255 * MatrixXc::Ones(n, n);
-  // B = 255 * MatrixXc::Ones(n, n);
+  typedef Matrix<unsigned char, -1, -1> MatrixXc;
+  MatrixXc R, G, B;
+  const int n = 100;
+  R = 255 * MatrixXc::Ones(n, n);
+  G = 255 * MatrixXc::Ones(n, n);
+  B = 255 * MatrixXc::Ones(n, n);
 
-  // for (int i = 0; i < n; i += 10)
-  //   for (int j = 0; j < n; j++) G(i, j) = B(i, j) = 0;
-  // for (int i = 0; i < n; i++)
-  //   for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
+  for (int i = 0; i < n; i += 10)
+    for (int j = 0; j < n; j++) G(i, j) = B(i, j) = 0;
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < n; j += 10) G(i, j) = R(i, j) = 0;
 
-  // viewer.data().set_texture(R,G,B);
-  // viewer.data().set_colors(RowVector3d(1,1,1));
-  // viewer.core().lighting_factor = 0;
+  viewer.core().lighting_factor = 0;
+
+  
+  for(int i = 0; i < Vs.size(); i++) {
+    viewer.append_mesh(true);
+    viewer.data().set_mesh(Vs[i], Fs[i]);
+    // auto color = RowVector3d::Random();
+    // viewer.data().set_colors(color);
+    viewer.data().set_colors(RowVector3d(1,1,1));
+    viewer.data().set_texture(R,G,B);
+    viewer.data().set_uv(Us[i]);
+    viewer.data().show_texture = true;
+  }
 
   pUs.reserve(Us.size());
 
@@ -138,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     viewer.append_mesh();
 
-    MatrixXd new_U = 10*MatrixXd::Ones(U.rows(), 3);
+    MatrixXd new_U = 0*MatrixXd::Ones(U.rows(), 3);
     new_U.col(0) = U.col(0);
     new_U.col(1) = U.col(1);
 

@@ -11,24 +11,25 @@ Segmentation::Segmentation(const MatrixXd &V, const MatrixXi &F,
                            igl::opengl::glfw::Viewer &viewer)
     : V(V), F(F), heds(0, 0), viewer(viewer) {
   HalfedgeBuilder hb;
-  heds = hb.createMesh(V.rows(), F);
+  heds = hb.createMeshWithFaces(V.rows(), F);
 }
 
 map<int,vector<int>> Segmentation::run() {
   cerr << "Build incident egges" << endl;
-  buildIncidentEdges();
+  // buildIncidentEdges();
   cerr << "Find initial features" << endl;
   findInitialFeatures();
   threshold = top_features.begin()->first;
   // colorInitialFeatures();
-  // cerr << "Expand feature curves" << endl;
+  cerr << "Expand feature curves" << endl;
   expandFeatureCurves();
   // cerr << "Color expanded feature curves" << endl;
   colorExpandedFeatures();
-  // cerr << "Calculate distance to features" << endl;
+  cerr << "Calculate distance to features" << endl;
   distanceToFeatures();
-  // cerr << "Expand charts" << endl;
+  cerr << "Expand charts" << endl;
   expandCharts();
+  cerr << "Get charts" << endl;
   return getCharts();
   // return map<int,vector<int>>();
 }
@@ -48,7 +49,8 @@ void Segmentation::expandCharts() {
 
   for (int f : max_facets) {
     par[f] = f;
-    int e = incidentEdge[f];
+    // int e = incidentEdge[f];
+    int e = heds.getEdgeInFace(f);
     int ne = e;
     do {
       pq.push(ne);
@@ -65,8 +67,9 @@ void Segmentation::expandCharts() {
     if (find(of) == -1) {
       join(f, of);
       chart_boundaries.erase(e);
-      // TO-DO: remove non extremal edges
-      int oe = incidentEdge[of];
+      // TO-DO: remove non extremal edges (not necessary, will be removed in the course of the algorithm)
+      // int oe = incidentEdge[of];
+      int oe = heds.getEdgeInFace(of);
       int ne = oe;
       do {
         if (chart_boundaries.count(ne)) pq.push(ne);
@@ -127,18 +130,34 @@ void Segmentation::join(int u, int v) {
 
 vector<int> Segmentation::maximalFacets() {
   vector<int> r;
-  for (int f = 0; f < heds.sizeOfFaces(); f++) {
-    int e = incidentEdge[f];
+  for (int f = 0; f < heds.sizeOfFaces(); f++)
+    if (isFacetLocalMaximum(f,5)) r.emplace_back(f);
+  return r;
+}
+
+bool Segmentation::isFacetLocalMaximum(int f, int depth) {
+  set<int> marc;
+  queue<pair<int,int>> q;
+  q.push({f,0});
+  marc.insert(f);
+  bool ok = true;
+  while(q.size()) {
+    auto p = q.front(); q.pop();
+    int ff = p.first, d = p.second;
+    ok &= (distanceF[f] >= distanceF[ff]);
+    int e = heds.getEdgeInFace(ff);
     int ne = e;
-    bool ok = true;
+    if(d==depth) continue;
     do {
       int of = heds.getFace(heds.getOpposite(ne));
-      ok &= (distanceF[f] >= distanceF[of]);
       ne = heds.getNext(ne);
+      if(!marc.count(of)) {
+        q.push({of,d+1});
+        marc.insert(of);
+      }
     } while (ne != e);
-    if (ok) r.emplace_back(f);
   }
-  return r;
+  return ok;
 }
 
 void Segmentation::distanceToFeatures() {
@@ -338,5 +357,3 @@ vector<int> Segmentation::outNeighbors(int h) {
   } while (hn != h);
   return neighbours;
 }
-
-vector<int> Segmentation::inNeighbors(int h) { return vector<int>(); }

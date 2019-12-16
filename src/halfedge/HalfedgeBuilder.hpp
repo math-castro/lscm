@@ -267,6 +267,7 @@ public:
     cout.clear();
 
     HalfedgeDS result(nV, nE, nF); // the resulting triangle mesh
+    result.setEdge(0,0);
 
     int i;
     int edgeCounter = 0;

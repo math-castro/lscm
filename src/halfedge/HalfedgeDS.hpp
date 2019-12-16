@@ -51,12 +51,16 @@ public:
 		nVertices = n;
 		nHalfedges = h;
 		nFaces = f;
-		T = (int*)malloc(nHalfedges * sizeT*sizeof(int));
+		// T = (int*)malloc(nHalfedges * sizeT*sizeof(int));
+		T = new int[nHalfedges * sizeT];
 		for (int i = 0; i < nHalfedges * sizeT; i++)
 			T[i] = -1; // "-1" means that reference is NOT DEFINED (null)
+		std::cout << (T[nHalfedges*sizeT-1]) << std::endl;
 
-		incidentEdge = (int*)malloc(nVertices*sizeof(int));
-		faces = (int*)malloc(nFaces*sizeof(int));
+		// incidentEdge = (int*)malloc(nVertices*sizeof(int));
+		// faces = (int*)malloc(nFaces*sizeof(int));
+		incidentEdge = new int[nVertices];
+		faces = new int[nFaces];
 	}
 
 	/** 
@@ -107,7 +111,7 @@ public:
 	/** 
 	 * Set the half-edge 'e' incident to the given face 'f'
 	 **/
-	int setEdgeInFace(int f, int e)
+	void setEdgeInFace(int f, int e)
 	{
 		faces[f]=e;
 	}
