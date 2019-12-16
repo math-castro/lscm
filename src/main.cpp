@@ -21,9 +21,12 @@ int main(int argc, char *argv[]) {
     // igl::readOFF("../src/data/quad.off", V, F);
     // igl::readPLY("../src/data/bunny.ply", V, F);
     igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
+  } else if (argc == 2) {
+	std::cout << "reading input file: " << argv[1] << std::endl;
+    igl::readOFF(argv[1], V, F);
   } else {
     std::cout << "reading input file: " << argv[1] << std::endl;
-    igl::readOFF(argv[1], V, F);
+    igl::readOBJ(argv[1], V, F);
   }
 
   igl::opengl::glfw::Viewer viewer;  // create the 3d viewer
@@ -103,7 +106,7 @@ int main(int argc, char *argv[]) {
 
   viewer.core().lighting_factor = 0;
 
-  
+
   for(int i = 0; i < Vs.size(); i++) {
     viewer.append_mesh(true);
     viewer.data().set_mesh(Vs[i], Fs[i]);
