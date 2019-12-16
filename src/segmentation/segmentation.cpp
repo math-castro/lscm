@@ -26,11 +26,11 @@ map<int,vector<int>> Segmentation::run() {
   // cerr << "Color expanded feature curves" << endl;
   colorExpandedFeatures();
   // cerr << "Calculate distance to features" << endl;
-  // distanceToFeatures();
+  distanceToFeatures();
   // cerr << "Expand charts" << endl;
-  // expandCharts();
-  // return getCharts();
-  return map<int,vector<int>>();
+  expandCharts();
+  return getCharts();
+  // return map<int,vector<int>>();
 }
 
 void Segmentation::expandCharts() {
