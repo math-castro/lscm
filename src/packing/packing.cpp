@@ -150,12 +150,13 @@ vector<int> pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const 
     alignBottomLeft(U);
   }
 
-  double resolution = DBL_MAX;
+  double size = sqrt(totalArea(Us, Ts));
+  double resolution = size/1000;
 
-  for(auto pU : Us) {
-    auto &U = *pU;
-    resolution = min(resolution, U.colwise().maxCoeff()(0)/10);
-  }
+  // for(auto pU : Us) {
+  //   auto &U = *pU;
+  //   resolution = min(resolution, U.colwise().maxCoeff()(0)/10);
+  // }
 
   for(int i = 0; i < Us.size(); i++) {
     MatrixXd &U = *Us[i];
@@ -171,7 +172,6 @@ vector<int> pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const 
   auto comp = [&](int a, int b) {return d[a] > d[b];};
   sort(id.begin(), id.end(), comp);
 
-  double size = sqrt(totalArea(Us, Ts));
   vector<int> hor;
   vector<int> dx, dy;
   FitResult fr;
