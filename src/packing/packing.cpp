@@ -59,39 +59,52 @@ void alignVertical(Eigen::MatrixXd &U) {
 }
 
 void alignBottomLeft(Eigen::MatrixXd &U) {
-  double min_u = DBL_MAX, min_v = DBL_MAX;
-  for(int i = 0; i < U.rows(); i++) {
-    min_u = min(min_u, U(i, 0));
-    min_v = min(min_v, U(i, 1));
-  }
+  // double min_u = DBL_MAX, min_v = DBL_MAX;
+  double min_u = U.colwise().minCoeff()(0);
+  double min_v = U.colwise().minCoeff()(1);
   for(int i = 0; i < U.rows(); i++) {
     U(i,0) -= min_u;
     U(i,1) -= min_v;
   }
 }
 
-Chart horizon(const MatrixXd &U, double resolution) {
+Chart horizon(const MatrixXd &U, const MatrixXi &T, double resolution) {
   map<int, int> upper_horizon, lower_horizon;
   int max_y = 0;
   const int margin = 20;
 
-  for(int i = 0; i < U.rows(); i++) {
-    int x = (int)lround(U(i,0)/resolution);
-    int y = (int)lround(U(i,1)/resolution);
-    max_y = max(max_y, y);
-    if(lower_horizon.count(x)) {
-      lower_horizon[x] = min(lower_horizon[x], y-margin);
-      upper_horizon[x] = max(upper_horizon[x], y+margin);
-    }
-    else {
-      lower_horizon[x] = y-margin;
-      upper_horizon[x] = y+margin;
+  for(int i = 0; i < T.rows(); i++) {
+    for(int j = 0; j < 2; j++) {
+      for(int k = j+1; k < 3; k++) {
+        int x1 = (int)lround(U(T(i,j),0)/resolution);
+        int y1 = (int)lround(U(T(i,j),1)/resolution);
+        int x2 = (int)lround(U(T(i,k),0)/resolution);
+        int y2 = (int)lround(U(T(i,k),1)/resolution);
+
+        if(x1 > x2) {
+          swap(x1,x2);
+          swap(y1,y2);
+        }
+
+        for(int x = x1; x <= x2; x++) {
+          int y = (x1==x2) ? y1 : y1 + (y2-y1)*(x-x1)/(x2-x1);
+          if(lower_horizon.count(x)) {
+            lower_horizon[x] = min(lower_horizon[x], y-margin);
+            upper_horizon[x] = max(upper_horizon[x], y+margin);
+          }
+          else {
+            lower_horizon[x] = y-margin;
+            upper_horizon[x] = y+margin;
+          }
+        }
+      }
     }
   }
   int max_x = lower_horizon.rbegin()->first;
 
   vector<int> lh(max_x+1+margin),uh(max_x+1+margin);
 
+  // cout << max_x << endl;
   for(int i = 0; i <= max_x; i++) {
     if(lower_horizon.count(i)) {
       lh[i] = lower_horizon[i];
@@ -106,6 +119,8 @@ Chart horizon(const MatrixXd &U, double resolution) {
       prev = next; --prev;
       uh[i] = prev->second + (next->second-prev->second)*(i-prev->first)/(next->first-prev->first);
     }
+    // if(max_x < 25)
+    //   cout << i << " " << lh[i] << " " << uh[i] << endl;
   }
   for(int i = max_x+1; i < max_x+1+margin; i++) {
     lh[i] = lh[max_x];
@@ -139,15 +154,14 @@ vector<int> pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const 
 
   for(auto pU : Us) {
     auto &U = *pU;
-    resolution = min(resolution, U.maxCoeff()/10);
+    resolution = min(resolution, U.colwise().maxCoeff()(0)/10);
   }
 
   for(int i = 0; i < Us.size(); i++) {
-    const MatrixXd &X = *Xs[i];
     MatrixXd &U = *Us[i];
     const MatrixXi &T = *Ts[i];
 
-    charts.emplace_back(horizon(U, resolution));
+    charts.emplace_back(horizon(U, T, resolution));
 
     auto diam = findDiameter(U);
     d.emplace_back((U.row(diam.first) - U.row(diam.second)).norm());
@@ -166,6 +180,7 @@ vector<int> pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const 
   double r = 10*l;
   while(fabs(l-r)/l > 1e-2) {
     double m = (r+l)/2;
+    // cout << l << " " << r << endl;
     fr = canFit(m, resolution, charts, id);
     if(fr.ok) r = m;
     else l = m;
@@ -185,11 +200,12 @@ FitResult canFit(double size, double resolution, vector<Chart> &charts, vector<i
   bool ok = true;
   vector<int> hor(size / resolution);
   vector<int> dx, dy;
+  // cout << int(size/resolution) << endl;
 
   for (int i : id) {
     pair<int, int> xy = calculateBestXY(hor, charts[i], size / resolution);
     int x = xy.first, y = xy.second;
-    if (x == -1 and y == -1) {
+    if (x == -1) {
       ok = false;
       break;
     }
@@ -205,7 +221,7 @@ int calculateDY(vector<int> &hor, vector<int> &lh, int x) {
   int dy = 0;
   for(int i = 0; i < lh.size(); i++) {
     if(x+i < hor.size())
-      dy = max(dy, hor[x+i]-lh[i]+1);
+      dy = max(dy, hor[x+i]-lh[i]);
     else
       throw "Out of bounds";
   }
@@ -215,6 +231,8 @@ int calculateDY(vector<int> &hor, vector<int> &lh, int x) {
 int calculateAreaUnder(vector<int> &hor, vector<int> &lh, int x, int y) {
   int a = 0;
   for(int i = 0; i < lh.size(); i++) {
+    if(lh[i]+y-hor[x+i] < 0)
+      throw "Fudeu";
     if(x+i < hor.size())
       a += lh[i]+y-hor[x+i];
     else
