@@ -14,21 +14,24 @@ using namespace std;
 
 // ------------ main program ----------------
 int main(int argc, char *argv[]) {
-  int mode = atoi(argv[argc-1]);
+  int mode;
 
   MatrixXd V;
   MatrixXi F;
 
-  if (argc < 2) {
+  if (argc == 1) {
     // igl::readOFF("../src/data/quad.off", V, F);
     // igl::readPLY("../src/data/bunny.ply", V, F);
-    igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
-  } else if (argc == 2) {
-	std::cout << "reading input file: " << argv[1] << std::endl;
-    igl::readOFF(argv[1], V, F);
-  } else {
+    igl::readOBJ("../data/LSCM_bunny.obj", V, F);
+    mode = 3;
+  } else if (argc == 3) {
     std::cout << "reading input file: " << argv[1] << std::endl;
     igl::readOBJ(argv[1], V, F);
+    mode = atoi(argv[argc-1]);
+  } else {
+    cout << "Usage:\n";
+    cout << argv[0] << "[path to obj model]" << "[mode]\n";
+    cout << "mode= 0, 1, 2, 3 or 4" << endl;
   }
 
   igl::opengl::glfw::Viewer viewer;  // create the 3d viewer

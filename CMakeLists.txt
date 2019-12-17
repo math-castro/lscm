@@ -1,14 +1,17 @@
 #cmake version 
 cmake_minimum_required(VERSION 3.1)
 
+# CMake
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # project declarations
 project(lscm)
 
 # C++ and Compiler
-add_compile_options(-Wall -Wextra)
-
-# CMake
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# add_compile_options(-Wall -Wextra)
 
 # set(Eigen3_DIR "~/opt/include/eigen3/Eigen")
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
