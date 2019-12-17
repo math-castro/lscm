@@ -23,7 +23,7 @@ std::pair<int, int> findDiameter(const Eigen::MatrixXd &V);
 void alignVertical(Eigen::MatrixXd &U);
 void alignBottomLeft(Eigen::MatrixXd &U);
 Chart horizon(const Eigen::MatrixXd &U, double resolution);
-void pack(std::vector<const Eigen::MatrixXd*>Xs, std::vector<Eigen::MatrixXd*> Us, std::vector<const Eigen::MatrixXi*> Ts);
+std::vector<int> pack(std::vector<const Eigen::MatrixXd*>Xs, std::vector<Eigen::MatrixXd*> Us, std::vector<const Eigen::MatrixXi*> Ts);
 FitResult canFit(double size, double resolution, std::vector<Chart> &charts, std::vector<int> &id);
 int calculateDY(std::vector<int> &hor, std::vector<int> &lh, int x);
 int calculateAreaUnder(std::vector<int> &hor, std::vector<int> &lh, int x, int y);

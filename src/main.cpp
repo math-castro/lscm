@@ -23,6 +23,9 @@ int main(int argc, char *argv[]) {
     // igl::readOFF("../src/data/quad.off", V, F);
     // igl::readPLY("../src/data/bunny.ply", V, F);
     igl::readOBJ("../src/data/LSCM_bunny.obj", V, F);
+  } else if (argc == 2) {
+	std::cout << "reading input file: " << argv[1] << std::endl;
+    igl::readOFF(argv[1], V, F);
   } else {
     std::cout << "reading input file: " << argv[1] << std::endl;
     igl::readOBJ(argv[1], V, F);
@@ -77,6 +80,7 @@ int main(int argc, char *argv[]) {
       viewer.data().set_mesh(Vs[i], Fs[i]);
       auto color = RowVector3d::Random();
       viewer.data().set_colors(color);
+      viewer.data().show_lines = false;
     }
     viewer.launch();
     exit(EXIT_SUCCESS);
@@ -129,9 +133,11 @@ int main(int argc, char *argv[]) {
 
   // PACKING
 
-  pack(pVs, pUs, pFs);
+  vector<int> id = pack(pVs, pUs, pFs);
+  reverse(id.begin(), id.end());
 
-  for (int i = 0; i < Us.size(); i++) {
+  for (int j = 0; j < Us.size(); j++) {
+    int i = id[j];
     auto &U = Us[i];
     auto &T = Fs[i];
 
@@ -145,6 +151,6 @@ int main(int argc, char *argv[]) {
     viewer.data().set_colors(RowVector3d(1,1,1));
   }
 
-  // viewer.core(0).align_camera_center(V, F);
+  // viewer.core().align_camera_center(V, F);
   viewer.launch();
 }

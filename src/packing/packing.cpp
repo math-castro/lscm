@@ -73,7 +73,7 @@ void alignBottomLeft(Eigen::MatrixXd &U) {
 Chart horizon(const MatrixXd &U, double resolution) {
   map<int, int> upper_horizon, lower_horizon;
   int max_y = 0;
-  const int margin = 200;
+  const int margin = 20;
 
   for(int i = 0; i < U.rows(); i++) {
     int x = (int)lround(U(i,0)/resolution);
@@ -115,7 +115,7 @@ Chart horizon(const MatrixXd &U, double resolution) {
   return {lh, uh, max_y, max_x};
 }
 
-void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixXi*> Ts) {
+vector<int> pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixXi*> Ts) {
   cout << "Started packing:..." << flush;
   auto start = chrono::high_resolution_clock::now();
   vector<double> d;
@@ -178,6 +178,7 @@ void pack(vector<const MatrixXd*> Xs, vector<MatrixXd*> Us, vector<const MatrixX
 
   auto finish = chrono::high_resolution_clock::now();
   cout << "done: " << chrono::duration<double>(finish-start).count() << " s" << endl;
+  return id;
 }
 
 FitResult canFit(double size, double resolution, vector<Chart> &charts, vector<int> &id) {

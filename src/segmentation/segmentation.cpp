@@ -326,7 +326,7 @@ void Segmentation::tagFeatures(vector<int> &features) {
     tagAsFeature(f);
     q.push({f, 0});
   }
-  tagNeighborhoods(q, 5);
+  tagNeighborhoods(q, 1);
 }
 
 void Segmentation::tagAsFeature(int h) {
