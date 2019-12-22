@@ -1,10 +1,10 @@
-# project-inf574
+# Least Squares Conformal Maps for Automatic Texture Atlas Generation
 Implementation of the research paper *[Least squares conformal maps for automatic texture atlas generation](https://doi.org/10.1145/566654.566590)*
 
 ## Requirements
-Install libigl on the project root folder or one directory above
+Install [libigl](https://libigl.github.io/) on the project folder, one directory above or in the other paths listed in `cmake/FindLIBIGL.cmake`
 
-Install Eigen v3.3
+Install [Eigen](http://eigen.tuxfamily.org/) v3.3
 <!-- ### Mac:
 ```
 brew install eigen
