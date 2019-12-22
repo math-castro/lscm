@@ -1,5 +1,5 @@
 # project-inf574
-Least Squares Conformal Maps for Automatic Texture Atlas Generation Implementation
+Implementation of the research paper *[Least squares conformal maps for automatic texture atlas generation](https://doi.org/10.1145/566654.566590)*
 
 ## Requirements
 Install libigl on the project root folder or one directory above
